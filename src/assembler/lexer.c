@@ -274,5 +274,5 @@ enum lexer_status lexer_next_token(FILE *file, struct lexer_token *token) {
     // and parsing the file cannot continue.
     token->text[0] = fgetc(file);
     token->text[1] = '\0';
-    return LEXER_STATUS_UNKNOWN_TOKEN;
+    return LEXER_STATUS_LEXICAL_ERROR;
 }

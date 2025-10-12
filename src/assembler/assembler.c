@@ -1,10 +1,45 @@
 #include "assembler/lexer.h"
+#include "assembler/parser.h"
 #include <stdio.h>
 
 
 int main(void) {
     FILE *file = fopen("program.S", "r");
 
+    enum parser_status status = PARSER_STATUS_EOF;
+    struct lexer_token token = {0};
+    do {
+        struct parser_group group = {0};
+        status = parser_next_group(file, &group, &token);
+        if (status == PARSER_STATUS_SUCCESS) {
+            printf("GOOD GROUP, label is %s\n", group.imm_label);
+        }
+        else {
+            printf("ERROR: parser failed\n");
+            switch (token.type) {
+            case LEXER_TOKEN_EOF:
+                printf("EOF\n");
+                break;
+            case LEXER_TOKEN_IDENTIFIER:
+                printf("IDENT(%s)\n", token.text);
+                break;
+            case LEXER_TOKEN_REGISTER:
+                printf("REGISTER(%s,%d)\n", token.text, token.value);
+                break;
+            case LEXER_TOKEN_NUMBER:
+                printf("NUMBER(%d)\n", token.value);
+                break;
+            case LEXER_TOKEN_COMMA:
+                printf("COMMA\n");
+                break;
+            case LEXER_TOKEN_COLON:
+                printf("COLON\n");
+                break;
+            }
+        }
+    } while (status != PARSER_STATUS_EOF);
+
+    /*
     struct lexer_token token = {0};
     do {
         enum lexer_status status = lexer_next_token(file, &token);
@@ -14,12 +49,28 @@ int main(void) {
             return 0;
         }
 
-        printf("Type:  %c\n", token.type);
-        printf("Text:  %s\n", token.text);
-        printf("Value: %d\n", token.value);
-        printf("Loc:   %d:%d\n", token.line, token.column);
-        printf("\n");
+        switch (token.type) {
+        case LEXER_TOKEN_EOF:
+            printf("EOF\n");
+            break;
+        case LEXER_TOKEN_IDENTIFIER:
+            printf("IDENT(%s)\n", token.text);
+            break;
+        case LEXER_TOKEN_REGISTER:
+            printf("REGISTER(%s,%d)\n", token.text, token.value);
+            break;
+        case LEXER_TOKEN_NUMBER:
+            printf("NUMBER(%d)\n", token.value);
+            break;
+        case LEXER_TOKEN_COMMA:
+            printf("COMMA\n");
+            break;
+        case LEXER_TOKEN_COLON:
+            printf("COLON\n");
+            break;
+        }
     } while(token.type != LEXER_TOKEN_EOF);
+    */
 
     fclose(file);
     return 0;

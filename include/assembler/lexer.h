@@ -15,9 +15,9 @@
 
 
 /** The maximum length (EXCLUDING the null terminator) for lexer tokens. */
-#define LEXER_TOKEN_MAX_LENGTH 32
+#define LEXER_TOKEN_MAX_LENGTH 31
 /** The maximum length (EXCLUDING the null terminator) for regsiter ABI names. */
-#define LEXER_REGISTER_NAME_MAX_LENGTH 8
+#define LEXER_REGISTER_NAME_MAX_LENGTH 7
 
 
 /**
@@ -79,7 +79,7 @@ enum lexer_status {
     /** The lexer was called with incorrect arguments. */
     LEXER_STATUS_INVALID_ARGUMENT,
     /** The lexer encountered an unknown character or token while reading the source file. */
-    LEXER_STATUS_UNKNOWN_TOKEN
+    LEXER_STATUS_LEXICAL_ERROR
 };
 
 
