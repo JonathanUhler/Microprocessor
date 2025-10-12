@@ -62,20 +62,27 @@ static const struct lexer_register_name lexer_register_table[] = {
  * Skips all whitespace in the specified file starting at the current read pointer.
  *
  * @param[inout] file  The file to skip whitespace in.
- * @param[inout] c     A pointer to read/store characters read from the file.
+ *
+ * @return Whether whitespace was successfully skipped without reaching the end of the file.
  */
-static void lexer_skip_whitespace(FILE *file, int *c) {
+static bool lexer_skip_whitespace(FILE *file) {
+    int c;
     do {
-        *c = fgetc(file);
+        c = fgetc(file);
         lexer_current_column++;
 
-        if (*c == '\n') {
+        if (c == '\n') {
             lexer_current_line++;
             lexer_current_column = 0;
         }
-    } while (isspace(*c));
+    } while (isspace(c));
 
-    lexer_current_column--;
+    if (c != EOF) {
+        ungetc(c, file);
+        lexer_current_column--;
+        return true;
+    }
+    return false;
 }
 
 
@@ -84,15 +91,14 @@ static void lexer_skip_whitespace(FILE *file, int *c) {
  * token, and parses that token if possible.
  *
  * @param[inout] file   The file to parse from.
- * @param[inout] c      A pointer to read/store characters read from the file.
  * @param[out]   token  A pointer to store token information.
  *
  * @return Whether a punctuation token was parsed from the file.
  */
-static bool lexer_check_punctuation(FILE *file, int *c, struct lexer_token *token) {
-    (void) file;
+static bool lexer_check_punctuation(FILE *file, struct lexer_token *token) {
+    int c = fgetc(file);
 
-    switch (*c) {
+    switch (c) {
     case ',':
         token->type = LEXER_TOKEN_COMMA;
         strncpy(token->text, ",", LEXER_TOKEN_MAX_LENGTH);
@@ -103,8 +109,12 @@ static bool lexer_check_punctuation(FILE *file, int *c, struct lexer_token *toke
         strncpy(token->text, ":", LEXER_TOKEN_MAX_LENGTH);
         lexer_current_column++;
         return true;
+    default:
+        if (c != EOF) {
+            ungetc(c, file);
+        }
+        return false;
     }
-    return false;
 }
 
 
@@ -113,23 +123,28 @@ static bool lexer_check_punctuation(FILE *file, int *c, struct lexer_token *toke
  * and parses that token if possible.
  *
  * @param[inout] file   The file to parse from.
- * @param[inout] c      A pointer to read/store characters read from the file.
  * @param[out]   token  A pointer to store token information.
  *
  * @return Whether a number token was parsed from the file.
  */
-static bool lexer_check_number(FILE *file, int *c, struct lexer_token *token) {
-    if (!isdigit(*c)) {
+static bool lexer_check_number(FILE *file, struct lexer_token *token) {
+    // If the first character we read isn't a digit (any digit for decimal, and '0' for the '0x' in
+    // hex specifically), it cannot possibly be a number.
+    int c = fgetc(file);
+    if (!isdigit(c)) {
+        ungetc(c, file);
         return false;
     }
 
+    // Determine the base. If the digit we read above is a '0' and the next is an 'x', we know the
+    // number is hexadecimal.
     uint32_t base = 10;
     uint32_t value = 0;
 
     int peekc = fgetc(file);
-    if (*c == '0' && tolower(peekc) == 'x') {
+    if (c == '0' && tolower(peekc) == 'x') {
         base = 16;
-        *c = fgetc(file);
+        c = fgetc(file);
         lexer_current_column++;
     }
     else {
@@ -138,14 +153,15 @@ static bool lexer_check_number(FILE *file, int *c, struct lexer_token *token) {
         }
     }
 
-    while (isxdigit(*c)) {
-        value = value * base + (isdigit(*c) ? *c - '0' : tolower(*c) - 'a' + 10);
-        *c = fgetc(file);
+    // Read the rest of the digits (hex or dec) and construct the number in-place.
+    while ((base == 10 && isdigit(c)) || (base == 16 && isxdigit(c))) {
+        value = value * base + (isdigit(c) ? c - '0' : tolower(c) - 'a' + 10);
+        c = fgetc(file);
         lexer_current_column++;
     }
 
-    if (*c != EOF) {
-        ungetc(*c, file);
+    if (c != EOF) {
+        ungetc(c, file);
     }
     token->type = LEXER_TOKEN_NUMBER;
     token->value = value;
@@ -171,28 +187,34 @@ const struct lexer_register_name *lexer_register_name_to_value(const char *name)
  * or register token, and parses that token if possible.
  *
  * @param[inout] file   The file to parse from.
- * @param[inout] c      A pointer to read/store characters read from the file.
  * @param[out]   token  A pointer to store token information.
  *
  * @return Whether an identifier or register token was parsed from the file.
  */
-static bool lexer_check_identifier(FILE *file, int *c, struct lexer_token *token) {
-    if (!isalpha(*c) && *c != '_') {
+static bool lexer_check_identifier(FILE *file, struct lexer_token *token) {
+    // Check for the first character, which is C-style (alpha + _ but no numbers)
+    int c = fgetc(file);
+    if (!isalpha(c) && c != '_') {
+        ungetc(c, file);
         return false;
     }
 
+    // Read additional characters until we find one that doesn't belong in an identifier.
     uint32_t i = 0;
     do {
-        token->text[i++] = *c;
-        *c = fgetc(file);
+        token->text[i++] = c;
+        c = fgetc(file);
         lexer_current_column++;
-    } while ((isalnum(*c) || *c == '_') && i < LEXER_TOKEN_MAX_LENGTH);
+    } while ((isalnum(c) || c == '_') && i < LEXER_TOKEN_MAX_LENGTH);
 
     token->text[i] = '\0';
-    if (*c != EOF) {
-        ungetc(*c, file);
+    if (c != EOF) {
+        ungetc(c, file);
     }
 
+    // At this point, we have a full identifier (null terminated) in token->text. Since labels,
+    // opcodes, and register names all fit the definition of an "identifier", we need to determine
+    // if the identifier is a register and get its encoded value.
     const struct lexer_register_name *register_name = lexer_register_name_to_value(token->text);
     if (register_name != NULL) {
         token->type = LEXER_TOKEN_REGISTER;
@@ -210,40 +232,47 @@ enum lexer_status lexer_next_token(FILE *file, struct lexer_token *token) {
         return LEXER_STATUS_INVALID_ARGUMENT;
     }
 
+    // At this point we know that the arguments are at least valid and parsing can be attempted.
+    // We clear the token parameters and fill them as we encounter tokens.
     token->type = LEXER_TOKEN_EOF;
     memset(&token->text, 0, sizeof(token->text));
     token->value = 0;
     token->line = 0;
     token->column = 0;
 
-    int c;
-
-    lexer_skip_whitespace(file, &c);
-    if (c == EOF) {
+    // Skip whitespace from the current file read pointer. If this returns false, that means the
+    // end of the file was reached while skipping whitespace. In that case, we reset the global
+    // line/column counters (for the next file) and return EOF.
+    if (!lexer_skip_whitespace(file)) {
         lexer_current_line = 1;
         lexer_current_column = 0;
         return LEXER_STATUS_EOF;
     }
 
+    // At this point we have reached a real (non-whitespace, non-comment) character to parse.
+    // We go through all the token parsers in order trying to find a lexical match.
+
     token->line = lexer_current_line;
     token->column = lexer_current_column;
-    if (lexer_check_punctuation(file, &c, token)) {
+    if (lexer_check_punctuation(file, token)) {
         return LEXER_STATUS_SUCCESS;
     }
 
     token->line = lexer_current_line;
     token->column = lexer_current_column;
-    if (lexer_check_number(file, &c, token)) {
+    if (lexer_check_number(file, token)) {
         return LEXER_STATUS_SUCCESS;
     }
 
     token->line = lexer_current_line;
     token->column = lexer_current_column;
-    if (lexer_check_identifier(file, &c, token)) {
+    if (lexer_check_identifier(file, token)) {
         return LEXER_STATUS_SUCCESS;
     }
 
-    token->text[0] = c;
+    // At this point all of the parsers have failed. That means we have an unrecognized token
+    // and parsing the file cannot continue.
+    token->text[0] = fgetc(file);
     token->text[1] = '\0';
     return LEXER_STATUS_UNKNOWN_TOKEN;
 }
