@@ -3,9 +3,35 @@
 
 
 #include "assembler/lexer.h"
+#include <stdint.h>
+#include <stdio.h>
 
 
 #define PARSER_OPCODE_NAME_MAX_LENGTH 7
+
+#define PARSER_FORMAT_SIZE     2
+#define PARSER_FORMAT_OFFSET  30
+#define PARSER_FUNCT_SIZE      4
+#define PARSER_FUNCT_OFFSET   26
+#define PARSER_REGISTER_SIZE   5
+#define PARSER_IMMEDIATE_SIZE 16
+
+
+/*
+struct parser_i_format {
+    
+} __attribute__((packed));
+
+
+struct parser_dsi_format {
+
+} __attribute__((packed));
+
+
+struct parser_dss_format {
+
+} __attribute__((packed));
+*/
 
 
 enum parser_opcode {
@@ -44,9 +70,18 @@ enum parser_opcode {
 };
 
 
+enum parser_opcode_format {
+    PARSER_OPCODE_FORMAT_I   = 0b00,
+    PARSER_OPCODE_FORMAT_DSI = 0b10,
+    PARSER_OPCODE_FORMAT_DSS = 0b11
+};
+
+
 struct parser_opcode_name {
     const char *name;
     enum parser_opcode opcode;
+    enum parser_opcode_format format;
+    uint32_t funct;
 };
 
 

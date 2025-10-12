@@ -12,7 +12,12 @@ int main(void) {
         struct parser_group group = {0};
         status = parser_next_group(file, &group, &token);
         if (status == PARSER_STATUS_SUCCESS) {
-            printf("GOOD GROUP, label is %s\n", group.imm_label);
+            printf("%x %x %x %x %x %s\n", group.opcode, group.rd, group.rs1, group.rs2, group.imm_num, group.imm_label);
+        }
+        else if (status == PARSER_STATUS_EOF) {
+            printf("Parsing complete (readed EOF gracefully)\n");
+            fclose(file);
+            return 0;
         }
         else {
             printf("ERROR: parser failed\n");
