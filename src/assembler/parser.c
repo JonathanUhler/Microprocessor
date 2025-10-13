@@ -46,16 +46,16 @@ static const struct parser_opcode_name parser_opcode_table[] = {
     {"jlro", JLRO, JLRO >> PARSER_FUNCT_SIZE, JLRO & (1U << PARSER_FUNCT_SIZE)},
     
     // Pseudo instructions
-    {"j", JLZ, JLZ >> PARSER_FUNCT_SIZE, JLZ & (1U << PARSER_FUNCT_SIZE)},
-    {"jl", JLZ, JLZ >> PARSER_FUNCT_SIZE, JLZ & (1U << PARSER_FUNCT_SIZE)},
-    {"jlr", JLRZ, JLRZ >> PARSER_FUNCT_SIZE, JLRZ & (1U << PARSER_FUNCT_SIZE)},
-    {"jo", JLO, JLO >> PARSER_FUNCT_SIZE, JLO & (1U << PARSER_FUNCT_SIZE)},
-    {"jz", JLZ, JLZ >> PARSER_FUNCT_SIZE, JLZ & (1U << PARSER_FUNCT_SIZE)},
-    {"call", JLZ, JLZ >> PARSER_FUNCT_SIZE, JLZ & (1U << PARSER_FUNCT_SIZE)},
-    {"li", ORI, ORI >> PARSER_FUNCT_SIZE, ORI & (1U << PARSER_FUNCT_SIZE)},
-    {"mv", OR, OR >> PARSER_FUNCT_SIZE, OR & (1U << PARSER_FUNCT_SIZE)},
-    {"nop", OR, OR >> PARSER_FUNCT_SIZE, OR & (1U << PARSER_FUNCT_SIZE)},
-    {"ret", JLRZ, JLRZ >> PARSER_FUNCT_SIZE, JLRZ & (1U << PARSER_FUNCT_SIZE)}
+    {"j", JLZ, PARSER_OPCODE_FORMAT_PSEUDO, PARSER_OPCODE_FORMAT_PSEUDO},
+    {"jl", JLZ, PARSER_OPCODE_FORMAT_PSEUDO, PARSER_OPCODE_FORMAT_PSEUDO},
+    {"jlr", JLRZ, PARSER_OPCODE_FORMAT_PSEUDO, PARSER_OPCODE_FORMAT_PSEUDO},
+    {"jo", JLO, PARSER_OPCODE_FORMAT_PSEUDO, PARSER_OPCODE_FORMAT_PSEUDO},
+    {"jz", JLZ, PARSER_OPCODE_FORMAT_PSEUDO, PARSER_OPCODE_FORMAT_PSEUDO},
+    {"call", JLZ, PARSER_OPCODE_FORMAT_PSEUDO, PARSER_OPCODE_FORMAT_PSEUDO},
+    {"li", ORI, PARSER_OPCODE_FORMAT_PSEUDO, PARSER_OPCODE_FORMAT_PSEUDO},
+    {"mv", OR, PARSER_OPCODE_FORMAT_PSEUDO, PARSER_OPCODE_FORMAT_PSEUDO},
+    {"nop", OR, PARSER_OPCODE_FORMAT_PSEUDO, PARSER_OPCODE_FORMAT_PSEUDO},
+    {"ret", JLRZ, PARSER_OPCODE_FORMAT_PSEUDO, PARSER_OPCODE_FORMAT_PSEUDO}
 };
 
 
@@ -124,7 +124,6 @@ static enum parser_status parser_expect_colon(FILE *file, struct lexer_token *to
 }
 
 
-
 static enum parser_status parser_expect_i_instruction(FILE *file,
                                                       struct parser_group *group,
                                                       struct lexer_token *token)
@@ -145,6 +144,64 @@ static enum parser_status parser_expect_i_instruction(FILE *file,
     default:
         break;  // Unreachable
     }
+
+    return PARSER_STATUS_SUCCESS;
+}
+
+
+static enum parser_status parser_expect_di_instruction(FILE *file,
+                                                       struct parser_group *group,
+                                                       struct lexer_token *token)
+{
+    enum parser_status parse_status;
+
+    if ((parse_status = parser_expect_register(file, token)) != PARSER_STATUS_SUCCESS) {
+        return parse_status;
+    }
+    group->rd = token->value;
+
+    if ((parse_status = parser_expect_comma(file, token)) != PARSER_STATUS_SUCCESS) {
+        return parse_status;
+    }
+
+    if ((parse_status = parser_expect_immediate(file, token)) != PARSER_STATUS_SUCCESS) {
+        return parse_status;
+    }
+    switch (token->type) {
+    case LEXER_TOKEN_IDENTIFIER:
+        strncpy(group->imm_label, token->text, LEXER_TOKEN_MAX_LENGTH);
+        group->imm_label[LEXER_TOKEN_MAX_LENGTH] = '\0';
+        break;
+    case LEXER_TOKEN_NUMBER:
+        group->imm_num = token->value;
+        break;
+    default:
+        break;  // Unreachable
+    }
+
+    return PARSER_STATUS_SUCCESS;   
+}
+
+
+static enum parser_status parser_expect_ds_instruction(FILE *file,
+                                                       struct parser_group *group,
+                                                       struct lexer_token *token)
+{
+    enum parser_status parse_status;
+
+    if ((parse_status = parser_expect_register(file, token)) != PARSER_STATUS_SUCCESS) {
+        return parse_status;
+    }
+    group->rd = token->value;
+
+    if ((parse_status = parser_expect_comma(file, token)) != PARSER_STATUS_SUCCESS) {
+        return parse_status;
+    }
+
+    if ((parse_status = parser_expect_register(file, token)) != PARSER_STATUS_SUCCESS) {
+        return parse_status;
+    }
+    group->rs1 = token->value;
 
     return PARSER_STATUS_SUCCESS;
 }
@@ -226,6 +283,69 @@ static enum parser_status parser_expect_dss_instruction(FILE *file,
 }
 
 
+static enum parser_status parser_expect_pseudo_instruction(FILE *file,
+                                                           struct parser_group *group,
+                                                           struct lexer_token *token)
+{
+    enum parser_status parse_status;
+
+    if (strncmp(token->text, "j", PARSER_OPCODE_NAME_MAX_LENGTH) == 0) {
+        parse_status = parser_expect_i_instruction(file, group, token);
+        group->rd = ZERO;
+        group->rs1 = ZERO;
+    }
+    else if (strncmp(token->text, "jl", PARSER_OPCODE_NAME_MAX_LENGTH) == 0) {
+        parse_status = parser_expect_di_instruction(file, group, token);
+        group->rs1 = ZERO;
+    }
+    else if (strncmp(token->text, "jlr", PARSER_OPCODE_NAME_MAX_LENGTH) == 0) {
+        parse_status = parser_expect_ds_instruction(file, group, token);
+        group->rs2 = group->rs1;
+        group->rs1 = ZERO;
+    }
+    else if (strncmp(token->text, "jo", PARSER_OPCODE_NAME_MAX_LENGTH) == 0) {
+        parse_status = parser_expect_di_instruction(file, group, token);
+        group->rs1 = group->rd;
+        group->rd = ZERO;
+    }
+    else if (strncmp(token->text, "jz", PARSER_OPCODE_NAME_MAX_LENGTH) == 0) {
+        parse_status = parser_expect_di_instruction(file, group, token);
+        group->rs1 = group->rd;
+        group->rd = ZERO;
+    }
+    else if (strncmp(token->text, "call", PARSER_OPCODE_NAME_MAX_LENGTH) == 0) {
+        parse_status = parser_expect_i_instruction(file, group, token);
+        group->rd = RA;
+        group->rs1 = ZERO;
+    }
+    else if (strncmp(token->text, "li", PARSER_OPCODE_NAME_MAX_LENGTH) == 0) {
+        parse_status = parser_expect_di_instruction(file, group, token);
+        group->rs1 = ZERO;
+    }
+    else if (strncmp(token->text, "mv", PARSER_OPCODE_NAME_MAX_LENGTH) == 0) {
+        parse_status = parser_expect_ds_instruction(file, group, token);
+        group->rs2 = ZERO;
+    }
+    else if (strncmp(token->text, "nop", PARSER_OPCODE_NAME_MAX_LENGTH) == 0) {
+        parse_status = PARSER_STATUS_SUCCESS;
+        group->rd = ZERO;
+        group->rs1 = ZERO;
+        group->rs2 = ZERO;
+    }
+    else if (strncmp(token->text, "ret", PARSER_OPCODE_NAME_MAX_LENGTH) == 0) {
+        parse_status = PARSER_STATUS_SUCCESS;
+        group->rd = ZERO;
+        group->rs1 = ZERO;
+        group->rs2 = RA;
+    }
+    else {
+        return PARSER_STATUS_SEMANTIC_ERROR;
+    }
+
+    return parse_status;
+}
+
+
 static enum parser_status parser_expect_instruction(FILE *file,
                                                     struct parser_group *group,
                                                     struct lexer_token *token)
@@ -236,7 +356,10 @@ static enum parser_status parser_expect_instruction(FILE *file,
 
     group->opcode = opcode_name->opcode;
 
-    if (opcode_name->format == PARSER_OPCODE_FORMAT_I) {
+    if (opcode_name->format == PARSER_OPCODE_FORMAT_PSEUDO) {
+        return parser_expect_pseudo_instruction(file, group, token);
+    }
+    else if (opcode_name->format == PARSER_OPCODE_FORMAT_I) {
         return parser_expect_i_instruction(file, group, token);
     }
     else if (opcode_name->format == PARSER_OPCODE_FORMAT_DSI) {

@@ -87,9 +87,10 @@ enum parser_opcode {
 
 
 enum parser_opcode_format {
-    PARSER_OPCODE_FORMAT_I   = 0b00,
-    PARSER_OPCODE_FORMAT_DSI = 0b10,
-    PARSER_OPCODE_FORMAT_DSS = 0b11
+    PARSER_OPCODE_FORMAT_I      = 0b00,
+    PARSER_OPCODE_FORMAT_DSI    = 0b10,
+    PARSER_OPCODE_FORMAT_DSS    = 0b11,
+    PARSER_OPCODE_FORMAT_PSEUDO = 0xFF
 };
 
 
