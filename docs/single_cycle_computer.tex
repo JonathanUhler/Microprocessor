@@ -1,0 +1,63 @@
+\documentclass{article}
+
+
+\usepackage{bytefield}
+\usepackage{tikz}
+\usetikzlibrary{positioning}
+
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{1em}
+
+
+\begin{document}
+
+\title{Single Cycle Computer}
+\author{Jonathan Uhler}
+\date{\today}
+\maketitle
+
+\textbf{Abstract}
+This document describes the implementation of a basic single-cycle computer based on the instruction
+set architecture defined in ``Instruction Set Architecture''.
+\pagebreak
+
+
+\section{Boot}
+This section describes the initial state of the computer when power is connected up to the point
+when the reset signal is released, allowing the program counter to increment on clock ticks.
+
+\subsection{Hardware Boot}
+When power is connected to the computer, no guarantee is made about the state of any memory,
+including general purpose registers. However, the following must be true about the state of the
+control and status registers:
+
+\begin{itemize}
+\item The \verb|reset| register must by set to \verb|0x0001|
+\item The \verb|pc| register must be set to \verb|0x0100|
+\end{itemize}
+
+This will stop the clock from influencing the fetch-decode-exeute loop and will prepare the computer
+to execute code at the reset vector.
+
+\subsection{Software Boot}
+The computer begins executing code at the absolute address in the program counter register when
+\verb|reset| is ZERO. Reset must be released by an external actor (that is, not an instruction,
+since no code can run while \verb|reset| is enabled).
+
+The first instruction fetch, decode, and execute that occurs is at the reset vector (address
+\verb|0x0100|). It is the responsibility of the code to initialize all general purpose registers and
+memory as needed. This includes the stack pointer and return address.
+
+A common control flow might look like:
+
+\begin{itemize}
+\item Code execution begins at the reset vector
+\item The reset vector sets the stack pointer to the base of the stack (e.g. \verb|0xFFFE|)
+\item The reset vector jumps to a \verb|_start| routine in the user code region (outside the
+  vector table).
+\item The \verb|_start| code performs any additional setup to run the main code
+\item The main code runs and eventually returns to \verb|_start|, which executes \verb|halt|
+\end{itemize}
+
+\end{document}

@@ -16,6 +16,10 @@
 \author{Jonathan Uhler}
 \date{\today}
 \maketitle
+
+\textbf{Abstract}
+This document describes a simple RISC instruction set architecture designed to learn more about
+computer architecture.
 \pagebreak
 
 
@@ -54,7 +58,6 @@ these registers. The control flow itself may also modify these registers as time
   \hline
   pc & Program counter (absolute byte address) \\
   reset & ONE when the processor is in reset, ZERO otherwise, set by the halt instruction \\
-  resetaddr & Address of the reset vector (runtime read-only, default 0x0100) \\
   \hline
 \end{tabular}
 
@@ -65,12 +68,8 @@ absolute. Thus, the maximum usable memeory is 64KB. Future extensions may add in
 to manager memory page indexing, allowing a larger window of memory to be used (although at a
 performance cost).
 
-By default, memory is organized as specified in the diagram below. Certain control registers,
-which are read-only while the processor is running, can be rewritten to change the memory map.
-
-Note that only the red regions are required (unless the aforementioned control registers are
-changed). The rest of the memory map for code, stack, and heap can be changed by organized by
-the loaded program and vector table.
+Note that only the red regions are required. The rest of the memory map for code, stack, and heap
+can be changed.
 
 \begin{tikzpicture}[
   segment/.style={draw, thick, minimum width=5cm, align=center},

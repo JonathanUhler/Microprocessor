@@ -15,3 +15,10 @@ add_executable(assembler
   ${SRC_DIR}/assembler/parser.c
   ${SRC_DIR}/assembler/encoder.c
 )
+
+add_executable(simulator
+  ${SRC_DIR}/simulator/simulator.c
+  ${SRC_DIR}/simulator/memory.c
+  ${SRC_DIR}/simulator/registers.c
+  ${SRC_DIR}/simulator/processor.c
+)
