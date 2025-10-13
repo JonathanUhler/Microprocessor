@@ -116,12 +116,12 @@ generally reserved for status and hardware control instructions (like halting th
 The Format field (bit 1:0) of I-type instructions is \verb|00|.
 
 \begin{bytefield}[bitwidth=0.4cm]{32}
-  \bitheader[endianness=little]{0-31}
+  \bitheader[endianness=big]{0-31}
   \\
-  \bitbox{2}{00}
-  \bitbox{4}{Funct}
-  \bitbox{10}{-}
   \bitbox{16}{Immediate}
+  \bitbox{10}{-}
+  \bitbox{4}{Funct}
+  \bitbox{2}{00}
 \end{bytefield}
 
 \subsubsection{DSI-Type}
@@ -134,13 +134,13 @@ which takes an immediate.
 The Format field (bit 1:0) of DSI-type instructions is \verb|10|.
 
 \begin{bytefield}[bitwidth=0.4cm]{32}
-  \bitheader[endianness=little]{0-31}
+  \bitheader[endianness=big]{0-31}
   \\
-  \bitbox{2}{10}
-  \bitbox{4}{Funct}
-  \bitbox{5}{Dest}
-  \bitbox{5}{Source 1}
   \bitbox{16}{Immediate}
+  \bitbox{5}{Source 1}
+  \bitbox{5}{Dest}
+  \bitbox{4}{Funct}
+  \bitbox{2}{10}
 \end{bytefield}
 
 \subsubsection{DSS-Type}
@@ -153,14 +153,14 @@ registers.
 The Format field (bit 1:0) of DSS-type instructions is \verb|11|.
 
 \begin{bytefield}[bitwidth=0.4cm]{32}
-  \bitheader[endianness=little]{0-31}
+  \bitheader[endianness=big]{0-31}
   \\
-  \bitbox{2}{11}
-  \bitbox{4}{Funct}
-  \bitbox{5}{Dest}
-  \bitbox{5}{Source 1}
-  \bitbox{5}{Source 2}
   \bitbox{11}{-}
+  \bitbox{5}{Source 2}
+  \bitbox{5}{Source 1}
+  \bitbox{5}{Dest}
+  \bitbox{4}{Funct}
+  \bitbox{2}{11}
 \end{bytefield}
 
 \subsection{Instruction List}
@@ -177,14 +177,14 @@ which is byte-addressable.
 
 \subsubsection{ADD - Addition}
 \begin{bytefield}[bitwidth=0.4cm]{32}
-  \bitheader[endianness=little]{0-31}
+  \bitheader[endianness=big]{0-31}
   \\
-  \bitbox{2}{11}
-  \bitbox{4}{0000}
-  \bitbox{5}{Dest}
-  \bitbox{5}{Source 1}
-  \bitbox{5}{Source 2}
   \bitbox{11}{-}
+  \bitbox{5}{Source 2}
+  \bitbox{5}{Source 1}
+  \bitbox{5}{Dest}
+  \bitbox{4}{0000}
+  \bitbox{2}{11}
 \end{bytefield}
 
 Meaning: \verb|R[Dest] <- R[Source1] + R[Source2]|
@@ -195,13 +195,13 @@ Add Source 1 and Source 2 and store the result in Dest.
 
 \subsubsection{ADDI - Addition With Immediate}
 \begin{bytefield}[bitwidth=0.4cm]{32}
-  \bitheader[endianness=little]{0-31}
+  \bitheader[endianness=big]{0-31}
   \\
-  \bitbox{2}{10}
-  \bitbox{4}{0000}
-  \bitbox{5}{Dest}
-  \bitbox{5}{Source 1}
   \bitbox{16}{Immediate}
+  \bitbox{5}{Source 1}
+  \bitbox{5}{Dest}
+  \bitbox{4}{0000}
+  \bitbox{2}{10}
 \end{bytefield}
 
 Meaning: \verb|R[Dest] <- R[Source1] + Immediate|
@@ -212,14 +212,14 @@ Add Source 1 and Immediate and store the result in Dest.
 
 \subsubsection{AND - Bitwise And}
 \begin{bytefield}[bitwidth=0.4cm]{32}
-  \bitheader[endianness=little]{0-31}
+  \bitheader[endianness=big]{0-31}
   \\
-  \bitbox{2}{11}
-  \bitbox{4}{0010}
-  \bitbox{5}{Dest}
-  \bitbox{5}{Source 1}
-  \bitbox{5}{Source 2}
   \bitbox{11}{-}
+  \bitbox{5}{Source 2}
+  \bitbox{5}{Source 1}
+  \bitbox{5}{Dest}
+  \bitbox{4}{0010}
+  \bitbox{2}{11}
 \end{bytefield}
 
 Meaning: \verb|R[Dest] <- R[Source1] & R[Source2]|
@@ -230,13 +230,13 @@ Compute the bitwise AND of Source 1 and Source 2 and store the result in Dest.
 
 \subsubsection{ANDI - Bitwise And With Immediate}
 \begin{bytefield}[bitwidth=0.4cm]{32}
-  \bitheader[endianness=little]{0-31}
+  \bitheader[endianness=big]{0-31}
   \\
-  \bitbox{2}{10}
-  \bitbox{4}{0010}
-  \bitbox{5}{Dest}
-  \bitbox{5}{Source 1}
   \bitbox{16}{Immediate}
+  \bitbox{5}{Source 1}
+  \bitbox{5}{Dest}
+  \bitbox{4}{0010}
+  \bitbox{2}{10}
 \end{bytefield}
 
 Meaning: \verb|R[Dest] <- R[Source1] & Immediate|
@@ -247,14 +247,14 @@ Compute the bitwise AND of Source 1 and Immediate and store the result in Dest.
 
 \subsubsection{EQ - Equals}
 \begin{bytefield}[bitwidth=0.4cm]{32}
-  \bitheader[endianness=little]{0-31}
+  \bitheader[endianness=big]{0-31}
   \\
-  \bitbox{2}{11}
-  \bitbox{4}{1000}
-  \bitbox{5}{Dest}
-  \bitbox{5}{Source 1}
-  \bitbox{5}{Source 2}
   \bitbox{11}{-}
+  \bitbox{5}{Source 2}
+  \bitbox{5}{Source 1}
+  \bitbox{5}{Dest}
+  \bitbox{4}{1000}
+  \bitbox{2}{11}
 \end{bytefield}
 
 Meaning: \verb|R[Dest] <- R[Source1] == R[Source2]|
@@ -265,14 +265,14 @@ If Source 1 and Source 2 are equal, store ONE in Dest, else store ZERO in Dest.
 
 \subsubsection{GT - Greater Than}
 \begin{bytefield}[bitwidth=0.4cm]{32}
-  \bitheader[endianness=little]{0-31}
+  \bitheader[endianness=big]{0-31}
   \\
-  \bitbox{2}{11}
-  \bitbox{4}{1001}
-  \bitbox{5}{Dest}
-  \bitbox{5}{Source 1}
-  \bitbox{5}{Source 2}
   \bitbox{11}{-}
+  \bitbox{5}{Source 2}
+  \bitbox{5}{Source 1}
+  \bitbox{5}{Dest}
+  \bitbox{4}{1001}
+  \bitbox{2}{11}
 \end{bytefield}
 
 Meaning: \verb|R[Dest] <- R[Source1] > R[Source2]|
@@ -283,12 +283,12 @@ If Source 1 is greater than Source 2, store ONE in Dest, else store ZERO in Dest
 
 \subsubsection{HALT - Halt Processor}
 \begin{bytefield}[bitwidth=0.4cm]{32}
-  \bitheader[endianness=little]{0-31}
+  \bitheader[endianness=big]{0-31}
   \\
-  \bitbox{2}{00}
-  \bitbox{4}{0000}
-  \bitbox{10}{-}
   \bitbox{16}{Immediate}
+  \bitbox{10}{-}
+  \bitbox{4}{0000}
+  \bitbox{2}{00}
 \end{bytefield}
 
 Meaning: \verb|exit(Immediate)|
@@ -299,13 +299,13 @@ Halt processor execution with the exit code in Immediate until reset is next rel
 
 \subsubsection{JLO - Jump and Link on One}
 \begin{bytefield}[bitwidth=0.4cm]{32}
-  \bitheader[endianness=little]{0-31}
+  \bitheader[endianness=big]{0-31}
   \\
-  \bitbox{2}{10}
-  \bitbox{4}{1111}
-  \bitbox{5}{Dest}
-  \bitbox{5}{Source 1}
   \bitbox{16}{Immediate}
+  \bitbox{5}{Source 1}
+  \bitbox{5}{Dest}
+  \bitbox{4}{1111}
+  \bitbox{2}{10}
 \end{bytefield}
 
 Meaning: \verb|if (R[Source1] == 1) { R[Dest] <- PC + 4; PC <- Immediate }|
@@ -317,14 +317,14 @@ address in Immediate.
 
 \subsubsection{JLRO - Jump and Link Register on One}
 \begin{bytefield}[bitwidth=0.4cm]{32}
-  \bitheader[endianness=little]{0-31}
+  \bitheader[endianness=big]{0-31}
   \\
-  \bitbox{2}{11}
-  \bitbox{4}{1111}
-  \bitbox{5}{Dest}
-  \bitbox{5}{Source 1}
-  \bitbox{5}{Source 2}
   \bitbox{11}{-}
+  \bitbox{5}{Source 2}
+  \bitbox{5}{Source 1}
+  \bitbox{5}{Dest}
+  \bitbox{4}{1111}
+  \bitbox{2}{11}
 \end{bytefield}
 
 Meaning: \verb|if (R[Source1] == 1) { R[Dest] <- PC + 4; PC <- R[Source2] }|
@@ -336,14 +336,14 @@ address in Source 2.
 
 \subsubsection{JLRZ - Jump and Link Register on Zero}
 \begin{bytefield}[bitwidth=0.4cm]{32}
-  \bitheader[endianness=little]{0-31}
+  \bitheader[endianness=big]{0-31}
   \\
-  \bitbox{2}{11}
-  \bitbox{4}{1110}
-  \bitbox{5}{Dest}
-  \bitbox{5}{Source 1}
-  \bitbox{5}{Source 2}
   \bitbox{11}{-}
+  \bitbox{5}{Source 2}
+  \bitbox{5}{Source 1}
+  \bitbox{5}{Dest}
+  \bitbox{4}{1110}
+  \bitbox{2}{11}
 \end{bytefield}
 
 Meaning: \verb|if (R[Source1] == 0) { R[Dest] <- PC + 4; PC <- R[Source2] }|
@@ -355,13 +355,13 @@ address in Source 2.
 
 \subsubsection{JLZ - Jump and Link on Zero}
 \begin{bytefield}[bitwidth=0.4cm]{32}
-  \bitheader[endianness=little]{0-31}
+  \bitheader[endianness=big]{0-31}
   \\
-  \bitbox{2}{10}
-  \bitbox{4}{1110}
-  \bitbox{5}{Dest}
-  \bitbox{5}{Source 1}
   \bitbox{16}{Immediate}
+  \bitbox{5}{Source 1}
+  \bitbox{5}{Dest}
+  \bitbox{4}{1110}
+  \bitbox{2}{10}
 \end{bytefield}
 
 Meaning: \verb|if (R[Source1] == 0) { R[Dest] <- PC + 4; PC <- Immediate }|
@@ -373,13 +373,13 @@ address in Immediate.
 
 \subsubsection{LD - Load}
 \begin{bytefield}[bitwidth=0.4cm]{32}
-  \bitheader[endianness=little]{0-31}
+  \bitheader[endianness=big]{0-31}
   \\
-  \bitbox{2}{10}
-  \bitbox{4}{1100}
-  \bitbox{5}{Dest}
-  \bitbox{5}{Source 1}
   \bitbox{16}{Immediate}
+  \bitbox{5}{Source 1}
+  \bitbox{5}{Dest}
+  \bitbox{4}{1100}
+  \bitbox{2}{10}
 \end{bytefield}
 
 Meaning: \verb|R[Dest] <- M[R[Source1] + Immediate]|
@@ -390,14 +390,14 @@ Load 16 bits from the address formed by adding Source 1 and Immediate and store 
 
 \subsubsection{LT - Less Than}
 \begin{bytefield}[bitwidth=0.4cm]{32}
-  \bitheader[endianness=little]{0-31}
+  \bitheader[endianness=big]{0-31}
   \\
-  \bitbox{2}{11}
-  \bitbox{4}{1010}
-  \bitbox{5}{Dest}
-  \bitbox{5}{Source 1}
-  \bitbox{5}{Source 2}
   \bitbox{11}{-}
+  \bitbox{5}{Source 2}
+  \bitbox{5}{Source 1}
+  \bitbox{5}{Dest}
+  \bitbox{4}{1010}
+  \bitbox{2}{11}
 \end{bytefield}
 
 Meaning: \verb|R[Dest] <- R[Source1] < R[Source2]|
@@ -408,14 +408,14 @@ If Source 1 is less than Source 2, store ONE in Dest, else store ZERO in Dest.
 
 \subsubsection{NE - Not Equal}
 \begin{bytefield}[bitwidth=0.4cm]{32}
-  \bitheader[endianness=little]{0-31}
+  \bitheader[endianness=big]{0-31}
   \\
-  \bitbox{2}{11}
-  \bitbox{4}{1011}
-  \bitbox{5}{Dest}
-  \bitbox{5}{Source 1}
-  \bitbox{5}{Source 2}
   \bitbox{11}{-}
+  \bitbox{5}{Source 2}
+  \bitbox{5}{Source 1}
+  \bitbox{5}{Dest}
+  \bitbox{4}{1011}
+  \bitbox{2}{11}
 \end{bytefield}
 
 Meaning: \verb|R[Dest] <- R[Source1] != R[Source2]|
@@ -426,14 +426,14 @@ If Source 1 is not equal to Source 2, store ONE in Dest, else store ZERO in Dest
 
 \subsubsection{OR - Bitwise Or}
 \begin{bytefield}[bitwidth=0.4cm]{32}
-  \bitheader[endianness=little]{0-31}
+  \bitheader[endianness=big]{0-31}
   \\
-  \bitbox{2}{11}
-  \bitbox{4}{0011}
-  \bitbox{5}{Dest}
-  \bitbox{5}{Source 1}
-  \bitbox{5}{Source 2}
   \bitbox{11}{-}
+  \bitbox{5}{Source 2}
+  \bitbox{5}{Source 1}
+  \bitbox{5}{Dest}
+  \bitbox{4}{0011}
+  \bitbox{2}{11}
 \end{bytefield}
 
 Meaning: \verb/R[Dest] <- R[Source1] | R[Source2]/
@@ -444,13 +444,13 @@ Compute the bitwise OR of Source 1 and Source 2 and store the result in Dest.
 
 \subsubsection{ORI - Bitwise Or With Immediate}
 \begin{bytefield}[bitwidth=0.4cm]{32}
-  \bitheader[endianness=little]{0-31}
+  \bitheader[endianness=big]{0-31}
   \\
-  \bitbox{2}{10}
-  \bitbox{4}{0011}
-  \bitbox{5}{Dest}
-  \bitbox{5}{Source 1}
   \bitbox{16}{Immediate}
+  \bitbox{5}{Source 1}
+  \bitbox{5}{Dest}
+  \bitbox{4}{0011}
+  \bitbox{2}{10}
 \end{bytefield}
 
 Meaning: \verb/R[Dest] <- R[Source1] | Immediate/
@@ -461,14 +461,14 @@ Compute the bitwise OR of Source 1 and Immediate and store the result in Dest.
 
 \subsubsection{SLL - Logical Shift Left}
 \begin{bytefield}[bitwidth=0.4cm]{32}
-  \bitheader[endianness=little]{0-31}
+  \bitheader[endianness=big]{0-31}
   \\
-  \bitbox{2}{11}
-  \bitbox{4}{0101}
-  \bitbox{5}{Dest}
-  \bitbox{5}{Source 1}
-  \bitbox{5}{Source 2}
   \bitbox{11}{-}
+  \bitbox{5}{Source 2}
+  \bitbox{5}{Source 1}
+  \bitbox{5}{Dest}
+  \bitbox{4}{0101}
+  \bitbox{2}{11}
 \end{bytefield}
 
 Meaning: \verb|R[Dest] <- R[Source1] << R[Source2]|
@@ -479,13 +479,13 @@ Shift Source 1 left by Source 2 bits and store the result in Dest.
 
 \subsubsection{SLLI - Logical Shift Left by Immediate}
 \begin{bytefield}[bitwidth=0.4cm]{32}
-  \bitheader[endianness=little]{0-31}
+  \bitheader[endianness=big]{0-31}
   \\
-  \bitbox{2}{10}
-  \bitbox{4}{0101}
-  \bitbox{5}{Dest}
-  \bitbox{5}{Source 1}
   \bitbox{16}{Immediate}
+  \bitbox{5}{Source 1}
+  \bitbox{5}{Dest}
+  \bitbox{4}{0101}
+  \bitbox{2}{10}
 \end{bytefield}
 
 Meaning: \verb|R[Dest] <- R[Source1] << Immediate|
@@ -496,14 +496,14 @@ Shift Source 1 left by Immediate bits and store the result in Dest.
 
 \subsubsection{SRA - Arithmetic Shift Right}
 \begin{bytefield}[bitwidth=0.4cm]{32}
-  \bitheader[endianness=little]{0-31}
+  \bitheader[endianness=big]{0-31}
   \\
-  \bitbox{2}{11}
-  \bitbox{4}{0111}
-  \bitbox{5}{Dest}
-  \bitbox{5}{Source 1}
-  \bitbox{5}{Source 2}
   \bitbox{11}{-}
+  \bitbox{5}{Source 2}
+  \bitbox{5}{Source 1}
+  \bitbox{5}{Dest}
+  \bitbox{4}{0111}
+  \bitbox{2}{11}
 \end{bytefield}
 
 Meaning: \verb|R[Dest] <- (int) R[Source1] >> R[Source2]|
@@ -514,13 +514,13 @@ Shift Source 1 right with SIGN extension by Source 2 bits and store the result i
 
 \subsubsection{SRAI - Arithmetic Shift Right by Immediate}
 \begin{bytefield}[bitwidth=0.4cm]{32}
-  \bitheader[endianness=little]{0-31}
+  \bitheader[endianness=big]{0-31}
   \\
-  \bitbox{2}{10}
-  \bitbox{4}{0111}
-  \bitbox{5}{Dest}
-  \bitbox{5}{Source 1}
   \bitbox{16}{Immediate}
+  \bitbox{5}{Source 1}
+  \bitbox{5}{Dest}
+  \bitbox{4}{0111}
+  \bitbox{2}{10}
 \end{bytefield}
 
 Meaning: \verb|R[Dest] <- (int) R[Source1] >> Immediate|
@@ -531,14 +531,14 @@ Shift Source 1 right with SIGN extension by Immediate bits and store the result 
 
 \subsubsection{SRL - Logical Shift Right}
 \begin{bytefield}[bitwidth=0.4cm]{32}
-  \bitheader[endianness=little]{0-31}
+  \bitheader[endianness=big]{0-31}
   \\
-  \bitbox{2}{11}
-  \bitbox{4}{0110}
-  \bitbox{5}{Dest}
-  \bitbox{5}{Source 1}
-  \bitbox{5}{Source 2}
   \bitbox{11}{-}
+  \bitbox{5}{Source 2}
+  \bitbox{5}{Source 1}
+  \bitbox{5}{Dest}
+  \bitbox{4}{0110}
+  \bitbox{2}{11}
 \end{bytefield}
 
 Meaning: \verb|R[Dest] <- (uint) R[Source1] >> R[Source2]|
@@ -549,13 +549,13 @@ Shift Source 1 right with ZERO extension by Source 2 bits and store the result i
 
 \subsubsection{SRLI - Logical Shift Right by Immediate}
 \begin{bytefield}[bitwidth=0.4cm]{32}
-  \bitheader[endianness=little]{0-31}
+  \bitheader[endianness=big]{0-31}
   \\
-  \bitbox{2}{10}
-  \bitbox{4}{0110}
-  \bitbox{5}{Dest}
-  \bitbox{5}{Source 1}
   \bitbox{16}{Immediate}
+  \bitbox{5}{Source 1}
+  \bitbox{5}{Dest}
+  \bitbox{4}{0110}
+  \bitbox{2}{10}
 \end{bytefield}
 
 Meaning: \verb|R[Dest] <- (uint) R[Source1] >> Immediate|
@@ -566,13 +566,13 @@ Shift Source 1 right with ZERO extension by Immediate bits and store the result 
 
 \subsubsection{ST - Store}
 \begin{bytefield}[bitwidth=0.4cm]{32}
-  \bitheader[endianness=little]{0-31}
+  \bitheader[endianness=big]{0-31}
   \\
-  \bitbox{2}{10}
-  \bitbox{4}{1101}
-  \bitbox{5}{Dest}
-  \bitbox{5}{Source 1}
   \bitbox{16}{Immediate}
+  \bitbox{5}{Source 1}
+  \bitbox{5}{Dest}
+  \bitbox{4}{1101}
+  \bitbox{2}{10}
 \end{bytefield}
 
 Meaning: \verb|M[R[Source1] + Immediate] <- R[Dest]|
@@ -583,14 +583,14 @@ Store Dest into the address formed by adding Source 1 and Immediate.
 
 \subsubsection{SUB - Subtraction}
 \begin{bytefield}[bitwidth=0.4cm]{32}
-  \bitheader[endianness=little]{0-31}
+  \bitheader[endianness=big]{0-31}
   \\
-  \bitbox{2}{11}
-  \bitbox{4}{0001}
-  \bitbox{5}{Dest}
-  \bitbox{5}{Source 1}
-  \bitbox{5}{Source 2}
   \bitbox{11}{-}
+  \bitbox{5}{Source 2}
+  \bitbox{5}{Source 1}
+  \bitbox{5}{Dest}
+  \bitbox{4}{0001}
+  \bitbox{2}{11}
 \end{bytefield}
 
 Meaning: \verb|R[Dest] <- R[Source1] - R[Source2]|
@@ -601,13 +601,13 @@ Subtract Source 2 from Source 1 and store the result in Dest.
 
 \subsubsection{SUBI - Subtraction With Immediate}
 \begin{bytefield}[bitwidth=0.4cm]{32}
-  \bitheader[endianness=little]{0-31}
+  \bitheader[endianness=big]{0-31}
   \\
-  \bitbox{2}{10}
-  \bitbox{4}{0001}
-  \bitbox{5}{Dest}
-  \bitbox{5}{Source 1}
   \bitbox{16}{Immediate}
+  \bitbox{5}{Source 1}
+  \bitbox{5}{Dest}
+  \bitbox{4}{0001}
+  \bitbox{2}{10}
 \end{bytefield}
 
 Meaning: \verb|R[Dest] <- R[Source1] - Immediate|
@@ -618,14 +618,14 @@ Subtract Immediate from Source 1 and store the result in Dest.
 
 \subsubsection{XOR - Bitwise Exclusive Or}
 \begin{bytefield}[bitwidth=0.4cm]{32}
-  \bitheader[endianness=little]{0-31}
+  \bitheader[endianness=big]{0-31}
   \\
-  \bitbox{2}{11}
-  \bitbox{4}{0100}
-  \bitbox{5}{Dest}
-  \bitbox{5}{Source 1}
-  \bitbox{5}{Source 2}
   \bitbox{11}{-}
+  \bitbox{5}{Source 2}
+  \bitbox{5}{Source 1}
+  \bitbox{5}{Dest}
+  \bitbox{4}{0100}
+  \bitbox{2}{11}
 \end{bytefield}
 
 Meaning: \verb/R[Dest] <- R[Source1] ^ R[Source2]/
@@ -636,13 +636,13 @@ Compute the bitwise XOR of Source 1 and Source 2 and store the result in Dest.
 
 \subsubsection{XORI - Bitwise Exclusive Or With Immediate}
 \begin{bytefield}[bitwidth=0.4cm]{32}
-  \bitheader[endianness=little]{0-31}
+  \bitheader[endianness=big]{0-31}
   \\
-  \bitbox{2}{10}
-  \bitbox{4}{0100}
-  \bitbox{5}{Dest}
-  \bitbox{5}{Source 1}
   \bitbox{16}{Immediate}
+  \bitbox{5}{Source 1}
+  \bitbox{5}{Dest}
+  \bitbox{4}{0100}
+  \bitbox{2}{10}
 \end{bytefield}
 
 Meaning: \verb/R[Dest] <- R[Source1] ^ Immediate/
@@ -655,12 +655,12 @@ Compute the bitwise XOR of Source 1 and Immediate and store the result in Dest.
 An alternative way of viewing the core instructions is by looking at their Format and Funct bits,
 which together form a single operation code (opcode).
 
-Each row corresponds to a Format code (bits 31:30 of an instruction) and each column corresponds to
-a Funct code (bits 29:26 of an instruction). The Format code \verb|01| is currently reserved and
+Each row corresponds to a Format code (bits 1:0 of an instruction) and each column corresponds to
+a Funct code (bits 5:2 of an instruction). The Format code \verb|01| is currently reserved and
 contains no valid instructions.
 
-The top six bits of an instruction (bits 31:26) can be read by indexing the row first, then the
-column.
+The top six bits of an instruction (bits 5:0) can be read by indexing the column first, then the
+row.
 
 \noindent\makebox[\textwidth][c]{
 \begin{tabular}{c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|}
