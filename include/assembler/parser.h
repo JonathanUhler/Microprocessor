@@ -10,28 +10,44 @@
 #define PARSER_OPCODE_NAME_MAX_LENGTH 7
 
 #define PARSER_FORMAT_SIZE     2
-#define PARSER_FORMAT_OFFSET  30
 #define PARSER_FUNCT_SIZE      4
-#define PARSER_FUNCT_OFFSET   26
 #define PARSER_REGISTER_SIZE   5
 #define PARSER_IMMEDIATE_SIZE 16
 
 
-/*
 struct parser_i_format {
-    
+    uint16_t format       : PARSER_FORMAT_SIZE;
+    uint16_t funct        : PARSER_FUNCT_SIZE;
+    uint16_t __RESERVED__ : 10;
+    uint16_t immediate    : PARSER_IMMEDIATE_SIZE;
 } __attribute__((packed));
 
 
 struct parser_dsi_format {
-
+    uint16_t format    : PARSER_FORMAT_SIZE;
+    uint16_t funct     : PARSER_FUNCT_SIZE;
+    uint16_t dest      : PARSER_REGISTER_SIZE;
+    uint16_t source1   : PARSER_REGISTER_SIZE;
+    uint16_t immediate : PARSER_IMMEDIATE_SIZE;
 } __attribute__((packed));
 
 
 struct parser_dss_format {
-
+    uint16_t format       : PARSER_FORMAT_SIZE;
+    uint16_t funct        : PARSER_FUNCT_SIZE;
+    uint16_t dest         : PARSER_REGISTER_SIZE;
+    uint16_t source1      : PARSER_REGISTER_SIZE;
+    uint16_t source2      : PARSER_REGISTER_SIZE;
+    uint16_t __RESERVED__ : 11;
 } __attribute__((packed));
-*/
+
+
+union parser_instruction_format {
+    struct parser_i_format i_type;
+    struct parser_dsi_format dsi_type;
+    struct parser_dss_format dss_type;
+    uint32_t binary;
+};
 
 
 enum parser_opcode {
@@ -85,13 +101,28 @@ struct parser_opcode_name {
 };
 
 
+enum parser_group_type {
+    PARSER_GROUP_INSTRUCTION,
+    PARSER_GROUP_LABEL,
+    PARSER_GROUP_EOF
+};
+
+
 struct parser_group {
+    enum parser_group_type type;
     enum parser_opcode opcode;
     uint32_t rd;
     uint32_t rs1;
     uint32_t rs2;
     uint32_t imm_num;
     char imm_label[LEXER_TOKEN_MAX_LENGTH + 1];
+};
+
+
+struct parser_group_node {
+    struct parser_group group;
+    uint32_t binary;
+    struct parser_group_node *next;
 };
 
 
@@ -106,24 +137,18 @@ enum parser_status {
 const struct parser_opcode_name *parser_opcode_name_to_value(const char *name);
 
 
+const struct parser_opcode_name *parser_opcode_value_to_name(enum parser_opcode value);
+
+
 enum parser_status parser_next_group(FILE *file,
                                      struct parser_group *group,
                                      struct lexer_token *last_token);
 
 
-/*
-  PATTERNS:
+struct parser_group_node *parser_parse_file(FILE *file);
 
-  Label: IDENT COLON
 
-  I-Type: IDENT [NUMBER | IDENT]
-
-  DSI-Type: IDENT REGISTER COMMA REGISTER COMMA [NUMBER | IDENT]
-
-  DSS-Type: IDENT REGISTER COMMA REGISTER COMMA REGISTER
-
-  End: EOF
- */
+void parser_free_group_nodes(struct parser_group_node *head);
 
 
 #endif  // _ASSEMBLER_PARSER_H_

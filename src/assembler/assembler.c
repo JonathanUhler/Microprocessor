@@ -1,82 +1,90 @@
+#include "assembler/encoder.h"
 #include "assembler/lexer.h"
+#include "assembler/logger.h"
 #include "assembler/parser.h"
+#include <getopt.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 
-int main(void) {
-    FILE *file = fopen("program.S", "r");
+void usage(const char *error) {
+    if (error != NULL) {
+        log_error("%s", error);
+    }
 
-    enum parser_status status = PARSER_STATUS_EOF;
-    struct lexer_token token = {0};
-    do {
-        struct parser_group group = {0};
-        status = parser_next_group(file, &group, &token);
-        if (status == PARSER_STATUS_SUCCESS) {
-            printf("%x %x %x %x %x %s\n", group.opcode, group.rd, group.rs1, group.rs2, group.imm_num, group.imm_label);
-        }
-        else if (status == PARSER_STATUS_EOF) {
-            printf("Parsing complete (readed EOF gracefully)\n");
-            fclose(file);
-            return 0;
-        }
-        else {
-            printf("ERROR: parser failed\n");
-            switch (token.type) {
-            case LEXER_TOKEN_EOF:
-                printf("EOF\n");
-                break;
-            case LEXER_TOKEN_IDENTIFIER:
-                printf("IDENT(%s)\n", token.text);
-                break;
-            case LEXER_TOKEN_REGISTER:
-                printf("REGISTER(%s,%d)\n", token.text, token.value);
-                break;
-            case LEXER_TOKEN_NUMBER:
-                printf("NUMBER(%d)\n", token.value);
-                break;
-            case LEXER_TOKEN_COMMA:
-                printf("COMMA\n");
-                break;
-            case LEXER_TOKEN_COLON:
-                printf("COLON\n");
-                break;
-            }
-        }
-    } while (status != PARSER_STATUS_EOF);
+    printf("usage: assembler [-o path] path\n");
+    printf("\n");
+    printf("options:\n");
+    printf("  -o path  specify the output path for the generated binary (default a.out)\n");
+    printf("\n");
+    printf("argument:\n");
+    printf("  path     the path to the assembly source file\n");
+    exit(error != NULL);
+}
 
-    /*
-    struct lexer_token token = {0};
-    do {
-        enum lexer_status status = lexer_next_token(file, &token);
-        if (status != LEXER_STATUS_SUCCESS && status != LEXER_STATUS_EOF) {
-            printf("ERROR: Line %d column %d (errno %d)\n", token.line, token.column, status);
-            fclose(file);
-            return 0;
-        }
 
-        switch (token.type) {
-        case LEXER_TOKEN_EOF:
-            printf("EOF\n");
+int main(int argc, char *argv[]) {
+    char *output_path = "./a.out";
+    char *input_path = NULL;
+
+    int flag;
+    while ((flag = getopt(argc, argv, "o:")) != -1) {
+        switch (flag) {
+        case 'o':
+            output_path = optarg;
             break;
-        case LEXER_TOKEN_IDENTIFIER:
-            printf("IDENT(%s)\n", token.text);
-            break;
-        case LEXER_TOKEN_REGISTER:
-            printf("REGISTER(%s,%d)\n", token.text, token.value);
-            break;
-        case LEXER_TOKEN_NUMBER:
-            printf("NUMBER(%d)\n", token.value);
-            break;
-        case LEXER_TOKEN_COMMA:
-            printf("COMMA\n");
-            break;
-        case LEXER_TOKEN_COLON:
-            printf("COLON\n");
+        default:
+            usage("unknown option flag");
             break;
         }
-    } while(token.type != LEXER_TOKEN_EOF);
-    */
+    }
 
-    fclose(file);
+    if (optind >= argc || argv[optind] == NULL) {
+        usage("missing required 'path' argument");
+    }
+    input_path = argv[optind];
+
+    FILE *in_file = fopen(input_path, "r");
+    if (in_file == NULL) {
+        log_fatal("cannot open input file '%s'", input_path);
+    }
+
+    struct parser_group_node *groups = parser_parse_file(in_file);
+    if (groups == NULL) {
+        log_fatal("parser failed, will not proceed with encoding");
+    }
+
+    enum encoder_status encoder_status = encoder_encode_groups(&groups);
+    if (encoder_status != ENCODER_STATUS_SUCCESS) {
+        log_fatal("encoder failed, will not proceed with output file writing");
+    }
+
+    FILE *out_file = fopen(output_path, "wb");
+    if (out_file == NULL) {
+        fclose(in_file);
+        parser_free_group_nodes(groups);
+        log_fatal("cannot open output file '%s'", output_path);
+    }
+
+    struct parser_group_node *curr = groups;
+    while (curr != NULL) {
+        uint8_t bytes[4] = {
+            (curr->binary >>  0) & 0xFF,
+            (curr->binary >>  8) & 0xFF,
+            (curr->binary >> 16) & 0xFF,
+            (curr->binary >> 24) & 0xFF
+        };
+        if (fwrite(bytes, sizeof(bytes), 1, out_file) != 1) {
+            fclose(in_file);
+            fclose(out_file);
+            parser_free_group_nodes(groups);
+            log_fatal("cannot write to output file '%s'", output_path);
+        }
+        curr = curr->next;
+    }
+
+    fclose(in_file);
+    fclose(out_file);
+    parser_free_group_nodes(groups);
     return 0;
 }

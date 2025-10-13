@@ -1,8 +1,14 @@
 #include "assembler/parser.h"
 #include "assembler/lexer.h"
+#include "assembler/logger.h"
+#include <inttypes.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
+
+
+static uint32_t parser_instruction_count = 0;
 
 
 static const struct parser_opcode_name parser_opcode_table[] = {
@@ -58,6 +64,19 @@ const struct parser_opcode_name *parser_opcode_name_to_value(const char *name) {
 
     for (size_t i = 0; i < n; i++) {
         if (strncmp(name, parser_opcode_table[i].name, PARSER_OPCODE_NAME_MAX_LENGTH) == 0) {
+            return &parser_opcode_table[i];
+        }
+    }
+
+    return NULL;
+}
+
+
+const struct parser_opcode_name *parser_opcode_value_to_name(enum parser_opcode value) {
+    size_t n = sizeof(parser_opcode_table) / sizeof(parser_opcode_table[0]);
+
+    for (size_t i = 0; i < n; i++) {
+        if (value == parser_opcode_table[i].opcode) {
             return &parser_opcode_table[i];
         }
     }
@@ -238,6 +257,7 @@ static enum parser_status parser_expect_label(FILE *file,
 {
     enum parser_status parse_status;
 
+    group->imm_num = parser_instruction_count;
     strncpy(group->imm_label, token->text, LEXER_TOKEN_MAX_LENGTH);
     group->imm_label[LEXER_TOKEN_MAX_LENGTH] = '\0';
 
@@ -257,6 +277,7 @@ enum parser_status parser_next_group(FILE *file,
         return PARSER_STATUS_INVALID_ARGUMENT;
     }
 
+    group->type = PARSER_GROUP_EOF;
     group->opcode = 0;
     group->rd = 0;
     group->rs1 = 0;
@@ -285,9 +306,66 @@ enum parser_status parser_next_group(FILE *file,
 
     const struct parser_opcode_name *opcode_name = parser_opcode_name_to_value(token->text);
     if (opcode_name != NULL) {
+        group->type = PARSER_GROUP_INSTRUCTION;
+        parser_instruction_count += 4;
         return parser_expect_instruction(file, group, token);
     }
     else {
+        group->type = PARSER_GROUP_LABEL;
         return parser_expect_label(file, group, token);
+    }
+}
+
+
+struct parser_group_node *parser_parse_file(FILE *file) {
+    if (file == NULL) {
+        return NULL;
+    }
+
+    struct parser_group_node *head = NULL;
+    struct parser_group_node *curr = NULL;
+
+    struct lexer_token last_token = {0};
+    while (true) {
+        struct parser_group group = {0};
+        enum parser_status parse_status = parser_next_group(file, &group, &last_token);
+        switch (parse_status) {
+        case PARSER_STATUS_SUCCESS:
+            struct parser_group_node *new_node =
+                (struct parser_group_node *) malloc(sizeof(struct parser_group_node));
+            new_node->group = group;
+            new_node->next = NULL;
+
+            if (curr == NULL) {
+                head = new_node;
+                curr = new_node;
+            }
+            else {
+                curr->next = new_node;
+                curr = new_node;
+            }
+            break;
+        case PARSER_STATUS_EOF:
+            return head;
+        default:
+            log_error("unexpected token at line %" PRIu32 ", col %" PRIu32,
+                      last_token.line, last_token.column);
+            parser_free_group_nodes(head);
+            return NULL;
+        }
+    }
+}
+
+
+void parser_free_group_nodes(struct parser_group_node *head) {
+    if (head == NULL) {
+        return;
+    }
+
+    struct parser_group_node *curr = head;
+    while (curr != NULL) {
+        struct parser_group_node *next = curr->next;
+        free(curr);
+        curr = next;
     }
 }

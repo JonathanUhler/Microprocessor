@@ -13,4 +13,5 @@ add_executable(assembler
   ${SRC_DIR}/assembler/assembler.c
   ${SRC_DIR}/assembler/lexer.c
   ${SRC_DIR}/assembler/parser.c
+  ${SRC_DIR}/assembler/encoder.c
 )
