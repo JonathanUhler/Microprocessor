@@ -70,7 +70,7 @@ union parser_instruction_format processor_decode_instruction(uint32_t binary,
 {
     union parser_instruction_format instruction;
     instruction.binary = binary;
-    *format = (enum parser_opcode_format) (binary >> 30U);
+    *format = (enum parser_opcode_format) (binary & ((1U << PARSER_FORMAT_SIZE) - 1U));
     return instruction;
 }
 
@@ -79,7 +79,7 @@ static enum processor_status processor_execute_i_type(struct processor *processo
                                                       struct parser_i_format instruction)
 {
     enum parser_opcode opcode =
-        (enum parser_opcode) ((instruction.format << PARSER_FUNCT_SIZE) | instruction.funct);
+        (enum parser_opcode) ((instruction.funct << PARSER_FORMAT_SIZE) | instruction.format);
 
     switch (opcode) {
     case HALT:
@@ -99,7 +99,7 @@ static enum processor_status processor_execute_dsi_type(struct processor *proces
     struct register_file *registers = processor->registers;
 
     enum parser_opcode opcode =
-        (enum parser_opcode) ((instruction.format << PARSER_FUNCT_SIZE) | instruction.funct);
+        (enum parser_opcode) ((instruction.funct << PARSER_FORMAT_SIZE) | instruction.format);
     enum lexer_register dest = (enum lexer_register) instruction.dest;
     enum lexer_register source1 = (enum lexer_register) instruction.source1;
     uint16_t immediate = instruction.immediate;
@@ -166,7 +166,7 @@ static enum processor_status processor_execute_dss_type(struct processor *proces
     struct register_file *registers = processor->registers;
 
     enum parser_opcode opcode =
-        (enum parser_opcode) ((instruction.format << PARSER_FUNCT_SIZE) | instruction.funct);
+        (enum parser_opcode) ((instruction.funct << PARSER_FORMAT_SIZE) | instruction.format);
     enum lexer_register dest = (enum lexer_register) instruction.dest;
     enum lexer_register source1 = (enum lexer_register) instruction.source1;
     enum lexer_register source2 = (enum lexer_register) instruction.source2;
@@ -258,14 +258,14 @@ enum processor_status processor_tick(struct processor *processor) {
         execute_status = processor_execute_dsi_type(processor, instruction.dsi_type);
         break;
     case PARSER_OPCODE_FORMAT_DSS:
-        printf("instruction: %08x\n", binary);
-        printf("format: %x\n", instruction.dsi_type.format);
         execute_status = processor_execute_dss_type(processor, instruction.dss_type);
         break;
     default:
         execute_status = PROCESSOR_STATUS_INVALID_INSTRUCTION;
         break;
     }
+
+    printf("processed instruction %08x, old_pc = %04x, curr_pc = %04x\n", binary, old_pc, processor->registers->pc);
 
     if (execute_status != PROCESSOR_STATUS_SUCCESS) {
         return execute_status;

@@ -440,10 +440,12 @@ enum parser_status parser_next_group(FILE *file,
 }
 
 
-struct parser_group_node *parser_parse_file(FILE *file) {
+struct parser_group_node *parser_parse_file(FILE *file, uint16_t base_address) {
     if (file == NULL) {
         return NULL;
     }
+
+    parser_instruction_count = base_address;
 
     struct parser_group_node *head = NULL;
     struct parser_group_node *curr = NULL;

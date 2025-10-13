@@ -15,6 +15,7 @@ void usage(const char *error) {
     printf("usage: assembler [-o path] path\n");
     printf("\n");
     printf("options:\n");
+    printf("  -b addr  specify the base address to place code (default 0x0100)\n");
     printf("  -o path  specify the output path for the generated binary (default a.out)\n");
     printf("\n");
     printf("argument:\n");
@@ -26,10 +27,14 @@ void usage(const char *error) {
 int main(int argc, char *argv[]) {
     char *output_path = "./a.out";
     char *input_path = NULL;
+    uint16_t base_address = 0x0100;
 
     int flag;
-    while ((flag = getopt(argc, argv, "o:")) != -1) {
+    while ((flag = getopt(argc, argv, "b:o:")) != -1) {
         switch (flag) {
+        case 'b':
+            base_address = atoi(optarg);
+            break;
         case 'o':
             output_path = optarg;
             break;
@@ -49,7 +54,7 @@ int main(int argc, char *argv[]) {
         log_fatal("cannot open input file '%s'", input_path);
     }
 
-    struct parser_group_node *groups = parser_parse_file(in_file);
+    struct parser_group_node *groups = parser_parse_file(in_file, base_address);
     if (groups == NULL) {
         log_fatal("parser failed, will not proceed with encoding");
     }

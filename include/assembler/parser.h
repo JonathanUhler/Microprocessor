@@ -146,7 +146,7 @@ enum parser_status parser_next_group(FILE *file,
                                      struct lexer_token *last_token);
 
 
-struct parser_group_node *parser_parse_file(FILE *file);
+struct parser_group_node *parser_parse_file(FILE *file, uint16_t base_address);
 
 
 void parser_free_group_nodes(struct parser_group_node *head);
