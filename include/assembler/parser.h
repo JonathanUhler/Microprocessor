@@ -1,3 +1,10 @@
+/**
+ * Parser to convert tokens emitted by the lexer into semantic groups.
+ *
+ * @author Jonathan Uhler
+ */
+
+
 #ifndef _ASSEMBLER_PARSER_H_
 #define _ASSEMBLER_PARSER_H_
 
@@ -8,35 +15,64 @@
 #include <stdio.h>
 
 
+/**
+ * The possible semantic group types.
+ */
 enum parser_group_type {
+    /** A group of tokens that form an instruction (any Format/type, including pseudo). */
     PARSER_GROUP_INSTRUCTION,
+    /** A group of tokens that define a label. */
     PARSER_GROUP_LABEL,
+    /** End of file; no semantic group was generated. */
     PARSER_GROUP_EOF
 };
 
 
+/**
+ * A structure representing a single group of tokens that form a single semantic unit.
+ */
 struct parser_group {
+    /** The type of the group, used to determine which other members are usable. */
     enum parser_group_type type;
+    /** The opcode of an instruction, if type is PARSER_GROUP_INSTRUCTION. */
     enum isa_opcode opcode;
+    /** The dest register of an instruction, if type is PARSER_GROUP_INSTRUCTION. */
     uint32_t rd;
+    /** The source1 register of an instruction, if type is PARSER_GROUP_INSTRUCTION. */
     uint32_t rs1;
+    /** The source2 register of an instruction, if type is PARSER_GROUP_INSTRUCTION. */
     uint32_t rs2;
+    /** The immediate/constant value as a number (literal for INSTRUCTION, address for LABEL). */
     uint32_t imm_num;
+    /** The immediate/constant value as a symbol (for INSTRUCTION or LABEL). */
     char imm_label[LEXER_TOKEN_MAX_LENGTH + 1];
 };
 
 
+/**
+ * A node in a singly-linked list of parser groups.
+ */
 struct parser_group_node {
+    /** The parser group. */
     struct parser_group group;
+    /** The binary of the parser group (e.g. machine code of an instruction), set by the encoder. */
     uint32_t binary;
+    /** Pointer to the next node. */
     struct parser_group_node *next;
 };
 
 
+/**
+ * The status of parser API functions.
+ */
 enum parser_status {
+    /** The parser operation was successful. */
     PARSER_STATUS_SUCCESS = 0,
+    /** The parser reached the end of the file. */
     PARSER_STATUS_EOF     = 1,
+    /** The parser API function was called with an invalid argument. */
     PARSER_STATUS_INVALID_ARGUMENT,
+    /** The parser encountered a semantic error during parsing. */
     PARSER_STATUS_SEMANTIC_ERROR
 };
 

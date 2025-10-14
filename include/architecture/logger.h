@@ -1,3 +1,10 @@
+/**
+ * Basic logging facilities for the software collection.
+ *
+ * @author Jonathan Uhler
+ */
+
+
 #ifndef _ARCHITECTURE_LOGGER_H_
 #define _ARCHITECTURE_LOGGER_H_
 
@@ -7,12 +14,19 @@
 #include <stdlib.h>
 
 
+/** ANSI reset color code. */
 #define LOGGER_COLOR_RESET "\033[0m"
+/** ANSI color code for trace level messages (light gray). */
 #define LOGGER_COLOR_TRACE "\033[37m"
+/** ANSI color code for debug level messages (black). */
 #define LOGGER_COLOR_DEBUG "\033[30m"
+/** ANSI color code for info level messages (green). */
 #define LOGGER_COLOR_INFO  "\033[32m"
+/** ANSI color code for warning level messages (yellow). */
 #define LOGGER_COLOR_WARN  "\033[33m"
+/** ANSI color code for error level messages (bold, red). */
 #define LOGGER_COLOR_ERROR "\033[91m\033[1m"
+/** ANSI color code for fatal level messages (bold, dark red). */
 #define LOGGER_COLOR_FATAL "\033[38;5;124m\033[1m"
 
 
@@ -54,18 +68,37 @@
     }
 
 
+/**
+ * Possible logging level values.
+ *
+ * Values increment as the messages become more verbose. If a program has the ability to count the
+ * occurances of a flag like -v, that can be used to set the log level.
+ *
+ * Fatal messages will always trigger, and by default (log level 0) no other messages are printed.
+ */
 enum logger_log_level {
-    LOGGER_LEVEL_TRACE = 3,
-    LOGGER_LEVEL_DEBUG = 2,
-    LOGGER_LEVEL_INFO  = 1,
-    LOGGER_LEVEL_WARN  = 0,
-    LOGGER_LEVEL_ERROR = 0
+    /** Allow all messages up to trace. */
+    LOGGER_LEVEL_TRACE = 5,
+    /** Allow all messages up to debug. */
+    LOGGER_LEVEL_DEBUG = 4,
+    /** Allow all messages up to info. */
+    LOGGER_LEVEL_INFO  = 3,
+    /** Allow all messages up to warning. */
+    LOGGER_LEVEL_WARN  = 2,
+    /** Allow only fatal and error messages. */
+    LOGGER_LEVEL_ERROR = 1
 };
 
 
+/** The current logger level. */
 extern enum logger_log_level logger_log_level;
 
 
+/**
+ * Sets a new logging level.
+ *
+ * @param new_level  The new logging level.
+ */
 void logger_set_level(enum logger_log_level new_level);
 
 
