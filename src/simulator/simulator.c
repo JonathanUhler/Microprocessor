@@ -9,7 +9,7 @@ int main(void) {
     struct processor *processor = create_processor();
 
     FILE *program = fopen("a.out", "rb");
-    (void) processor_load_program(processor, program, 0x0100, 0x5F00);
+    (void) processor_load_program(processor, program, 0x0100);
     fclose(program);
 
     enum processor_status status;

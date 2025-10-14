@@ -74,8 +74,27 @@ void destroy_processor(struct processor *processor);
  */
 enum processor_status processor_load_program(struct processor *processor,
                                              FILE *file,
-                                             uint16_t address,
-                                             uint16_t region_size);
+                                             uint16_t address);
+
+
+/**
+ * Sets the reset register in the provided processor.
+ *
+ * @param processor  The processor to assert reset for.
+ *
+ * @return Whether setting reset was successful.
+ */
+enum processor_status processor_assert_reset(struct processor *processor);
+
+
+/**
+ * Unsets the reset register in the provided processor.
+ *
+ * @param processor  The processor to deassert reset for.
+ *
+ * @return Whether unsetting reset was successful.
+ */
+enum processor_status processor_deassert_reset(struct processor *processor);
 
 
 /**

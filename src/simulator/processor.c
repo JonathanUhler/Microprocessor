@@ -13,8 +13,7 @@ struct processor *create_processor(void) {
     struct processor *processor = (struct processor *) malloc(sizeof(struct processor));
     processor->memory = (struct memory *) malloc(sizeof(struct memory));
     processor->registers = (struct register_file *) malloc(sizeof(struct register_file));
-    processor->registers->pc = 0x0100;
-    processor->registers->reset = 0x0001;
+    processor_assert_reset(processor);
     return processor;
 }
 
@@ -28,8 +27,7 @@ void destroy_processor(struct processor *processor) {
 
 enum processor_status processor_load_program(struct processor *processor,
                                              FILE *file,
-                                             uint16_t address,
-                                             uint16_t region_size)
+                                             uint16_t address)
 {
     if (processor == NULL || file == NULL) {
         return PROCESSOR_STATUS_INVALID_ARGUMENT;
@@ -41,10 +39,6 @@ enum processor_status processor_load_program(struct processor *processor,
         if (byte == EOF) {
             break;
         }
-        if (bytes_read >= region_size) {
-            log_error("Program file is larger than region size (0x%04" PRIx16 " B)", region_size);
-            return PROCESSOR_STATUS_OUT_OF_MEMORY;
-        }
 
         memory_store_byte(processor->memory, address + bytes_read, byte);
         bytes_read++;
@@ -54,6 +48,25 @@ enum processor_status processor_load_program(struct processor *processor,
              bytes_read,
              address);
 
+    return PROCESSOR_STATUS_SUCCESS;
+}
+
+
+enum processor_status processor_assert_reset(struct processor *processor) {
+    if (processor == NULL) {
+        return PROCESSOR_STATUS_INVALID_ARGUMENT;
+    }
+    processor->registers->pc = 0x0100;
+    processor->registers->reset = 0x0001;
+    return PROCESSOR_STATUS_SUCCESS;
+}
+
+
+enum processor_status processor_deassert_reset(struct processor *processor) {
+    if (processor == NULL) {
+        return PROCESSOR_STATUS_INVALID_ARGUMENT;
+    }
+    processor->registers->reset = 0x0000;
     return PROCESSOR_STATUS_SUCCESS;
 }
 
@@ -269,6 +282,9 @@ static enum processor_status processor_execute_dss_type(struct processor *proces
 enum processor_status processor_tick(struct processor *processor) {
     if (processor == NULL) {
         return PROCESSOR_STATUS_INVALID_ARGUMENT;
+    }
+    if (processor->registers->reset == 0x0001) {
+        return PROCESSOR_STATUS_HALTED;
     }
 
     log_info("Clock tick: pc = 0x%04" PRIx16, processor->registers->pc);
