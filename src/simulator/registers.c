@@ -1,5 +1,7 @@
 #include "simulator/registers.h"
 #include "architecture/isa.h"
+#include "architecture/logger.h"
+#include <inttypes.h>
 #include <stdint.h>
 #include <stdlib.h>
 
@@ -8,10 +10,9 @@ uint16_t registers_read(const struct register_file *rf, enum isa_register index)
     if (rf == NULL) {
         return 0;
     }
-    if (index == ZERO) {
-        return 0;
-    }
-    return rf->gp[index];
+    uint16_t value = rf->gp[index];
+    log_trace("Read:  R[%2d] = 0x%04" PRIx16, index, value);
+    return value;
 }
 
 
@@ -23,4 +24,5 @@ void registers_write(struct register_file *rf, enum isa_register index, uint16_t
         return;
     }
     rf->gp[index] = value;
+    log_trace("Write: R[%2d] = 0x%04" PRIx16, index, value);
 }

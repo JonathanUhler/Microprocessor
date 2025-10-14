@@ -1,5 +1,7 @@
 #include "simulator/processor.h"
 #include "architecture/isa.h"
+#include "architecture/logger.h"
+#include <inttypes.h>
 #include <limits.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -40,12 +42,17 @@ enum processor_status processor_load_program(struct processor *processor,
             break;
         }
         if (bytes_read >= region_size) {
+            log_error("Program file is larger than region size (0x%04" PRIx16 " B)", region_size);
             return PROCESSOR_STATUS_OUT_OF_MEMORY;
         }
 
         memory_store_byte(processor->memory, address + bytes_read, byte);
         bytes_read++;
     }
+
+    log_info("Loaded %" PRIu32 " bytes into instruction memory at 0x%04" PRIx16,
+             bytes_read,
+             address);
 
     return PROCESSOR_STATUS_SUCCESS;
 }
@@ -79,6 +86,10 @@ static enum processor_status processor_execute_i_type(struct processor *processo
 {
     enum isa_opcode opcode =
         (enum isa_opcode) ((instruction.funct << ISA_INSTRUCTION_FORMAT_SIZE) | instruction.format);
+    uint16_t immediate = instruction.immediate;
+
+    const struct isa_opcode_map *opcode_map = isa_get_opcode_map_from_opcode(opcode);
+    log_debug("Execute: %s 0x%04" PRIx16, opcode_map->symbol, immediate);
 
     switch (opcode) {
     case HALT:
@@ -102,6 +113,13 @@ static enum processor_status processor_execute_dsi_type(struct processor *proces
     enum isa_register dest = (enum isa_register) instruction.dest;
     enum isa_register source1 = (enum isa_register) instruction.source1;
     uint16_t immediate = instruction.immediate;
+
+    const struct isa_opcode_map *opcode_map = isa_get_opcode_map_from_opcode(opcode);
+    log_debug("Execute: %s %s, %s, 0x%04" PRIx16,
+              opcode_map->symbol,
+              isa_get_register_map_from_index(dest)->symbol,
+              isa_get_register_map_from_index(source1)->symbol,
+              immediate);
 
     switch (opcode) {
     case ADDI:
@@ -169,6 +187,13 @@ static enum processor_status processor_execute_dss_type(struct processor *proces
     enum isa_register dest = (enum isa_register) instruction.dest;
     enum isa_register source1 = (enum isa_register) instruction.source1;
     enum isa_register source2 = (enum isa_register) instruction.source2;
+
+    const struct isa_opcode_map *opcode_map = isa_get_opcode_map_from_opcode(opcode);
+    log_debug("Execute: %s %s, %s, %s",
+              opcode_map->symbol,
+              isa_get_register_map_from_index(dest)->symbol,
+              isa_get_register_map_from_index(source1)->symbol,
+              isa_get_register_map_from_index(source2)->symbol);
 
     switch (opcode) {
     case ADD:
@@ -242,7 +267,14 @@ static enum processor_status processor_execute_dss_type(struct processor *proces
 
 
 enum processor_status processor_tick(struct processor *processor) {
+    if (processor == NULL) {
+        return PROCESSOR_STATUS_INVALID_ARGUMENT;
+    }
+
+    log_info("Clock tick: pc = 0x%04" PRIx16, processor->registers->pc);
+
     uint32_t binary = processor_fetch_instruction(processor);
+    log_debug("Fetch: 0x%08" PRIx32, binary)
 
     enum isa_opcode_format format;
     union isa_instruction instruction = processor_decode_instruction(binary, &format);
@@ -251,12 +283,15 @@ enum processor_status processor_tick(struct processor *processor) {
     uint16_t old_pc = processor->registers->pc;
     switch (format) {
     case ISA_OPCODE_FORMAT_I:
+        log_debug("Decode: I-type instruction");
         execute_status = processor_execute_i_type(processor, instruction.i_type);
         break;
     case ISA_OPCODE_FORMAT_DSI:
+        log_debug("Decode: DSI-type instruction");
         execute_status = processor_execute_dsi_type(processor, instruction.dsi_type);
         break;
     case ISA_OPCODE_FORMAT_DSS:
+        log_debug("Decode: DSS-type instruction");
         execute_status = processor_execute_dss_type(processor, instruction.dss_type);
         break;
     default:
@@ -264,9 +299,13 @@ enum processor_status processor_tick(struct processor *processor) {
         break;
     }
 
-    printf("processed instruction %08x, old_pc = %04x, curr_pc = %04x\n", binary, old_pc, processor->registers->pc);
-
     if (execute_status != PROCESSOR_STATUS_SUCCESS) {
+        if (execute_status == PROCESSOR_STATUS_HALTED) {
+            log_info("Processor halted at pc = 0x%04" PRIx16, processor->registers->pc);
+        }
+        else {
+            log_error("Simulator error after instruction decode: %d", execute_status);
+        }
         return execute_status;
     }
 

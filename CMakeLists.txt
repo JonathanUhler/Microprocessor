@@ -12,6 +12,7 @@ include_directories(${INCLUDE_DIR})
 
 add_library(architecture STATIC
   ${SRC_DIR}/architecture/isa.c
+  ${SRC_DIR}/architecture/logger.c
 )
 
 add_executable(assembler

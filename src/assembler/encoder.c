@@ -1,7 +1,7 @@
 #include "assembler/encoder.h"
-#include "assembler/logger.h"
 #include "assembler/parser.h"
 #include "architecture/isa.h"
+#include "architecture/logger.h"
 #include <stdint.h>
 
 

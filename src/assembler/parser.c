@@ -1,7 +1,7 @@
 #include "assembler/parser.h"
 #include "assembler/lexer.h"
-#include "assembler/logger.h"
 #include "architecture/isa.h"
+#include "architecture/logger.h"
 #include <inttypes.h>
 #include <stdbool.h>
 #include <stdint.h>
