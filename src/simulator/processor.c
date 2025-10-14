@@ -63,7 +63,7 @@ static uint32_t processor_fetch_instruction(struct processor *processor) {
     uint16_t end_addr = start_addr + sizeof(uint32_t);
 
     uint32_t binary = 0;
-    for (uint16_t addr = end_addr - 1; addr >= start_addr; addr--) {
+    for (uint16_t addr = end_addr - 1; addr <= end_addr && addr >= start_addr; addr--) {
         binary <<= CHAR_BIT;
         binary |= memory_load_byte(processor->memory, addr);
     }
