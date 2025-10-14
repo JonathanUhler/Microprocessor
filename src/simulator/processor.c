@@ -1,6 +1,7 @@
 #include "simulator/processor.h"
 #include "assembler/lexer.h"
 #include "assembler/parser.h"
+#include "architecture/isa.h"
 #include <limits.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -100,8 +101,8 @@ static enum processor_status processor_execute_dsi_type(struct processor *proces
 
     enum parser_opcode opcode =
         (enum parser_opcode) ((instruction.funct << PARSER_FORMAT_SIZE) | instruction.format);
-    enum lexer_register dest = (enum lexer_register) instruction.dest;
-    enum lexer_register source1 = (enum lexer_register) instruction.source1;
+    enum isa_register dest = (enum isa_register) instruction.dest;
+    enum isa_register source1 = (enum isa_register) instruction.source1;
     uint16_t immediate = instruction.immediate;
 
     switch (opcode) {
@@ -167,9 +168,9 @@ static enum processor_status processor_execute_dss_type(struct processor *proces
 
     enum parser_opcode opcode =
         (enum parser_opcode) ((instruction.funct << PARSER_FORMAT_SIZE) | instruction.format);
-    enum lexer_register dest = (enum lexer_register) instruction.dest;
-    enum lexer_register source1 = (enum lexer_register) instruction.source1;
-    enum lexer_register source2 = (enum lexer_register) instruction.source2;
+    enum isa_register dest = (enum isa_register) instruction.dest;
+    enum isa_register source1 = (enum isa_register) instruction.source1;
+    enum isa_register source2 = (enum isa_register) instruction.source2;
 
     switch (opcode) {
     case ADD:
