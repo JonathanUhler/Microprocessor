@@ -41,6 +41,55 @@ static const struct isa_register_map isa_register_table[] = {
 };
 
 
+static const struct isa_opcode_map isa_opcode_table[] = {
+    // First row (I-Type)
+    {"halt", HALT,
+     HALT & ISA_INSTRUCTION_FORMAT_MASK, HALT >> ISA_INSTRUCTION_FORMAT_SIZE},
+    
+    // Third row (DSI-Type)
+    {"addi", ADDI, ADDI & ISA_INSTRUCTION_FORMAT_MASK, ADDI >> ISA_INSTRUCTION_FORMAT_SIZE},
+    {"subi", SUBI, SUBI & ISA_INSTRUCTION_FORMAT_MASK, SUBI >> ISA_INSTRUCTION_FORMAT_SIZE},
+    {"andi", ANDI, ANDI & ISA_INSTRUCTION_FORMAT_MASK, ANDI >> ISA_INSTRUCTION_FORMAT_SIZE},
+    {"ori",  ORI,  ORI  & ISA_INSTRUCTION_FORMAT_MASK, ORI  >> ISA_INSTRUCTION_FORMAT_SIZE},
+    {"xori", XORI, XORI & ISA_INSTRUCTION_FORMAT_MASK, XORI >> ISA_INSTRUCTION_FORMAT_SIZE},
+    {"slli", SLLI, SLLI & ISA_INSTRUCTION_FORMAT_MASK, SLLI >> ISA_INSTRUCTION_FORMAT_SIZE},
+    {"srli", SRLI, SRLI & ISA_INSTRUCTION_FORMAT_MASK, SRLI >> ISA_INSTRUCTION_FORMAT_SIZE},
+    {"srai", SRAI, SRAI & ISA_INSTRUCTION_FORMAT_MASK, SRAI >> ISA_INSTRUCTION_FORMAT_SIZE},
+    {"ld",   LD,   LD   & ISA_INSTRUCTION_FORMAT_MASK, LD   >> ISA_INSTRUCTION_FORMAT_SIZE},
+    {"st",   ST,   ST   & ISA_INSTRUCTION_FORMAT_MASK, ST   >> ISA_INSTRUCTION_FORMAT_SIZE},
+    {"jlz",  JLZ,  JLZ  & ISA_INSTRUCTION_FORMAT_MASK, JLZ  >> ISA_INSTRUCTION_FORMAT_SIZE},
+    {"jlo",  JLO,  JLO  & ISA_INSTRUCTION_FORMAT_MASK, JLO  >> ISA_INSTRUCTION_FORMAT_SIZE},
+    
+    // Fourth row (DSS-Type)
+    {"add",  ADD,  ADD  & ISA_INSTRUCTION_FORMAT_MASK, ADD  >> ISA_INSTRUCTION_FORMAT_SIZE},
+    {"sub",  SUB,  SUB  & ISA_INSTRUCTION_FORMAT_MASK, SUB  >> ISA_INSTRUCTION_FORMAT_SIZE},
+    {"and",  AND,  AND  & ISA_INSTRUCTION_FORMAT_MASK, AND  >> ISA_INSTRUCTION_FORMAT_SIZE},
+    {"or",   OR,   OR   & ISA_INSTRUCTION_FORMAT_MASK, OR   >> ISA_INSTRUCTION_FORMAT_SIZE},
+    {"xor",  XOR,  XOR  & ISA_INSTRUCTION_FORMAT_MASK, XOR  >> ISA_INSTRUCTION_FORMAT_SIZE},
+    {"sll",  SLL,  SLL  & ISA_INSTRUCTION_FORMAT_MASK, SLL  >> ISA_INSTRUCTION_FORMAT_SIZE},
+    {"srl",  SRL,  SRL  & ISA_INSTRUCTION_FORMAT_MASK, SRL  >> ISA_INSTRUCTION_FORMAT_SIZE},
+    {"sra",  SRA,  SRA  & ISA_INSTRUCTION_FORMAT_MASK, SRA  >> ISA_INSTRUCTION_FORMAT_SIZE},
+    {"eq",   EQ,   EQ   & ISA_INSTRUCTION_FORMAT_MASK, EQ   >> ISA_INSTRUCTION_FORMAT_SIZE},
+    {"gt",   GT,   GT   & ISA_INSTRUCTION_FORMAT_MASK, GT   >> ISA_INSTRUCTION_FORMAT_SIZE},
+    {"lt",   LT,   LT   & ISA_INSTRUCTION_FORMAT_MASK, LT   >> ISA_INSTRUCTION_FORMAT_SIZE},
+    {"ne",   NE,   NE   & ISA_INSTRUCTION_FORMAT_MASK, NE   >> ISA_INSTRUCTION_FORMAT_SIZE},
+    {"jlrz", JLRZ, JLRZ & ISA_INSTRUCTION_FORMAT_MASK, JLRZ >> ISA_INSTRUCTION_FORMAT_SIZE},
+    {"jlro", JLRO, JLRO & ISA_INSTRUCTION_FORMAT_MASK, JLRO >> ISA_INSTRUCTION_FORMAT_SIZE},
+    
+    // Pseudo instructions
+    {"j",    JLZ,  ISA_OPCODE_FORMAT_PSEUDO, ISA_OPCODE_FORMAT_PSEUDO},
+    {"jl",   JLZ,  ISA_OPCODE_FORMAT_PSEUDO, ISA_OPCODE_FORMAT_PSEUDO},
+    {"jlr",  JLRZ, ISA_OPCODE_FORMAT_PSEUDO, ISA_OPCODE_FORMAT_PSEUDO},
+    {"jo",   JLO,  ISA_OPCODE_FORMAT_PSEUDO, ISA_OPCODE_FORMAT_PSEUDO},
+    {"jz",   JLZ,  ISA_OPCODE_FORMAT_PSEUDO, ISA_OPCODE_FORMAT_PSEUDO},
+    {"call", JLZ,  ISA_OPCODE_FORMAT_PSEUDO, ISA_OPCODE_FORMAT_PSEUDO},
+    {"li",   ORI,  ISA_OPCODE_FORMAT_PSEUDO, ISA_OPCODE_FORMAT_PSEUDO},
+    {"mv",   OR,   ISA_OPCODE_FORMAT_PSEUDO, ISA_OPCODE_FORMAT_PSEUDO},
+    {"nop",  OR,   ISA_OPCODE_FORMAT_PSEUDO, ISA_OPCODE_FORMAT_PSEUDO},
+    {"ret",  JLRZ, ISA_OPCODE_FORMAT_PSEUDO, ISA_OPCODE_FORMAT_PSEUDO}
+};
+
+
 const struct isa_register_map *isa_get_register_map_from_symbol(const char *symbol) {
     size_t n = sizeof(isa_register_table) / sizeof(isa_register_table[0]);
     for (size_t i = 0; i < n; i++) {
@@ -57,6 +106,28 @@ const struct isa_register_map *isa_get_register_map_from_index(enum isa_register
     for (size_t i = 0; i < n; i++) {
         if (index == isa_register_table[i].index) {
             return &isa_register_table[i];
+        }
+    }
+    return NULL;
+}
+
+
+const struct isa_opcode_map *isa_get_opcode_map_from_symbol(const char *symbol) {
+    size_t n = sizeof(isa_opcode_table) / sizeof(isa_opcode_table[0]);
+    for (size_t i = 0; i < n; i++) {
+        if (strncmp(symbol, isa_opcode_table[i].symbol, ISA_OPCODE_SYMBOL_MAX_LENGTH) == 0) {
+            return &isa_opcode_table[i];
+        }
+    }
+    return NULL;
+}
+
+
+const struct isa_opcode_map *isa_get_opcode_map_from_opcode(enum isa_opcode opcode) {
+    size_t n = sizeof(isa_opcode_table) / sizeof(isa_opcode_table[0]);
+    for (size_t i = 0; i < n; i++) {
+        if (opcode == isa_opcode_table[i].opcode) {
+            return &isa_opcode_table[i];
         }
     }
     return NULL;

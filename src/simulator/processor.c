@@ -1,6 +1,4 @@
 #include "simulator/processor.h"
-#include "assembler/lexer.h"
-#include "assembler/parser.h"
 #include "architecture/isa.h"
 #include <limits.h>
 #include <stdbool.h>
@@ -66,21 +64,21 @@ static uint32_t processor_fetch_instruction(struct processor *processor) {
 }
 
 
-union parser_instruction_format processor_decode_instruction(uint32_t binary,
-                                                             enum parser_opcode_format *format)
+union isa_instruction processor_decode_instruction(uint32_t binary,
+                                                      enum isa_opcode_format *format)
 {
-    union parser_instruction_format instruction;
+    union isa_instruction instruction;
     instruction.binary = binary;
-    *format = (enum parser_opcode_format) (binary & ((1U << PARSER_FORMAT_SIZE) - 1U));
+    *format = (enum isa_opcode_format) (binary & ((1U << ISA_INSTRUCTION_FORMAT_SIZE) - 1U));
     return instruction;
 }
 
 
 static enum processor_status processor_execute_i_type(struct processor *processor,
-                                                      struct parser_i_format instruction)
+                                                      struct isa_i_format instruction)
 {
-    enum parser_opcode opcode =
-        (enum parser_opcode) ((instruction.funct << PARSER_FORMAT_SIZE) | instruction.format);
+    enum isa_opcode opcode =
+        (enum isa_opcode) ((instruction.funct << ISA_INSTRUCTION_FORMAT_SIZE) | instruction.format);
 
     switch (opcode) {
     case HALT:
@@ -94,13 +92,13 @@ static enum processor_status processor_execute_i_type(struct processor *processo
 
 
 static enum processor_status processor_execute_dsi_type(struct processor *processor,
-                                                        struct parser_dsi_format instruction)
+                                                        struct isa_dsi_format instruction)
 {
     struct memory *memory = processor->memory;
     struct register_file *registers = processor->registers;
 
-    enum parser_opcode opcode =
-        (enum parser_opcode) ((instruction.funct << PARSER_FORMAT_SIZE) | instruction.format);
+    enum isa_opcode opcode =
+        (enum isa_opcode) ((instruction.funct << ISA_INSTRUCTION_FORMAT_SIZE) | instruction.format);
     enum isa_register dest = (enum isa_register) instruction.dest;
     enum isa_register source1 = (enum isa_register) instruction.source1;
     uint16_t immediate = instruction.immediate;
@@ -162,12 +160,12 @@ static enum processor_status processor_execute_dsi_type(struct processor *proces
 
 
 static enum processor_status processor_execute_dss_type(struct processor *processor,
-                                                        struct parser_dss_format instruction)
+                                                        struct isa_dss_format instruction)
 {
     struct register_file *registers = processor->registers;
 
-    enum parser_opcode opcode =
-        (enum parser_opcode) ((instruction.funct << PARSER_FORMAT_SIZE) | instruction.format);
+    enum isa_opcode opcode =
+        (enum isa_opcode) ((instruction.funct << ISA_INSTRUCTION_FORMAT_SIZE) | instruction.format);
     enum isa_register dest = (enum isa_register) instruction.dest;
     enum isa_register source1 = (enum isa_register) instruction.source1;
     enum isa_register source2 = (enum isa_register) instruction.source2;
@@ -246,19 +244,19 @@ static enum processor_status processor_execute_dss_type(struct processor *proces
 enum processor_status processor_tick(struct processor *processor) {
     uint32_t binary = processor_fetch_instruction(processor);
 
-    enum parser_opcode_format format;
-    union parser_instruction_format instruction = processor_decode_instruction(binary, &format);
+    enum isa_opcode_format format;
+    union isa_instruction instruction = processor_decode_instruction(binary, &format);
 
     enum processor_status execute_status;
     uint16_t old_pc = processor->registers->pc;
     switch (format) {
-    case PARSER_OPCODE_FORMAT_I:
+    case ISA_OPCODE_FORMAT_I:
         execute_status = processor_execute_i_type(processor, instruction.i_type);
         break;
-    case PARSER_OPCODE_FORMAT_DSI:
+    case ISA_OPCODE_FORMAT_DSI:
         execute_status = processor_execute_dsi_type(processor, instruction.dsi_type);
         break;
-    case PARSER_OPCODE_FORMAT_DSS:
+    case ISA_OPCODE_FORMAT_DSS:
         execute_status = processor_execute_dss_type(processor, instruction.dss_type);
         break;
     default:

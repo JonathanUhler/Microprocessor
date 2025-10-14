@@ -70,17 +70,6 @@ enum lexer_status {
 
 
 /**
- * Gets information about the name of a register from a symbolic (ABI or raw) name.
- *
- * @param name  The symbolic (ABI or raw) name of a register, case sensitive.
- *
- * @return A structure containing name information for the requested register, or NULL if no such
- *         register exists.
- */
-const struct lexer_register_name *lexer_register_name_to_value(const char *name);
-
-
-/**
  * Runs the lexer on the provided input file to get the next token.
  *
  * Lexing will continue at wherever the read pointer is in the file. This function will advance
