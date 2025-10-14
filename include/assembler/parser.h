@@ -77,14 +77,37 @@ enum parser_status {
 };
 
 
+/**
+ * Attempts to parse the next semantic group from the provided file.
+ *
+ * @param file        A file to read tokens from.
+ * @param group       A pointer to a non-null group to populate with semantic information.
+ * @param last_token  A pointer to store the last lexical token, which can be used to debug
+ *                    semantic errors.
+ *
+ * @return The status of parsing.
+ */
 enum parser_status parser_next_group(FILE *file,
                                      struct parser_group *group,
                                      struct lexer_token *last_token);
 
 
+/**
+ * Parses all semantic groups from a file, returning them in chronological order as a list.
+ *
+ * @param file          THe file to read tokens from.
+ * @param base_address  The base address for the generated code, used during label resolution.
+ *
+ * @return Pointer to the first semantic group node.
+ */
 struct parser_group_node *parser_parse_file(FILE *file, uint16_t base_address);
 
 
+/**
+ * Frees a list of nodes returned by parser_parse_file.
+ *
+ * @param head  Pointer to the head node of the list to free.
+ */
 void parser_free_group_nodes(struct parser_group_node *head);
 
 
