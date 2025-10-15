@@ -21,6 +21,8 @@ struct register_file {
     uint16_t pc;
     /** Reset signal register. */
     uint16_t reset;
+    /** Cycle count (modulo 2^16) register. */
+    uint16_t ccount;
     /** General purpose registers. */
     uint16_t gp[R31 - R0 + 1];
 };

@@ -44,6 +44,8 @@ int main(int argc, char *argv[]) {
         }
     }
 
+    logger_set_level(LOGGER_LEVEL_TRACE);
+
     if (optind >= argc || argv[optind] == NULL) {
         usage("missing required 'path' argument");
     }

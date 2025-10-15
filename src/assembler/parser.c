@@ -13,6 +13,7 @@ static uint32_t parser_instruction_count = 0;
 
 
 static enum parser_status parser_expect_register(FILE *file, struct lexer_token *token) {
+    log_trace("Parser expecting register");
     enum lexer_status lex_status = lexer_next_token(file, token);
     if (lex_status != LEXER_STATUS_SUCCESS || token->type != LEXER_TOKEN_REGISTER) {
         return PARSER_STATUS_SEMANTIC_ERROR;
@@ -22,6 +23,7 @@ static enum parser_status parser_expect_register(FILE *file, struct lexer_token 
 
 
 static enum parser_status parser_expect_immediate(FILE *file, struct lexer_token *token) {
+    log_trace("Parser expecting immediate constant or label");
     enum lexer_status lex_status = lexer_next_token(file, token);
     if (lex_status != LEXER_STATUS_SUCCESS) {
         return PARSER_STATUS_SEMANTIC_ERROR;
@@ -34,6 +36,7 @@ static enum parser_status parser_expect_immediate(FILE *file, struct lexer_token
 
 
 static enum parser_status parser_expect_comma(FILE *file, struct lexer_token *token) {
+    log_trace("Parser expecting comma separator");
     enum lexer_status lex_status = lexer_next_token(file, token);
     if (lex_status != LEXER_STATUS_SUCCESS || token->type != LEXER_TOKEN_COMMA) {
         return PARSER_STATUS_SEMANTIC_ERROR;
@@ -43,6 +46,7 @@ static enum parser_status parser_expect_comma(FILE *file, struct lexer_token *to
 
 
 static enum parser_status parser_expect_colon(FILE *file, struct lexer_token *token) {
+    log_trace("Parser expecting colon separator");
     enum lexer_status lex_status = lexer_next_token(file, token);
     if (lex_status != LEXER_STATUS_SUCCESS || token->type != LEXER_TOKEN_COLON) {
         return PARSER_STATUS_SEMANTIC_ERROR;
@@ -55,6 +59,7 @@ static enum parser_status parser_expect_i_instruction(FILE *file,
                                                       struct parser_group *group,
                                                       struct lexer_token *token)
 {
+    log_trace("Parser expecting I-type instruction");
     enum parser_status parse_status;
         
     if ((parse_status = parser_expect_immediate(file, token)) != PARSER_STATUS_SUCCESS) {
@@ -80,6 +85,7 @@ static enum parser_status parser_expect_di_instruction(FILE *file,
                                                        struct parser_group *group,
                                                        struct lexer_token *token)
 {
+    log_trace("Parser expecting DI-type pseudo-instruction");
     enum parser_status parse_status;
 
     if ((parse_status = parser_expect_register(file, token)) != PARSER_STATUS_SUCCESS) {
@@ -114,6 +120,7 @@ static enum parser_status parser_expect_ds_instruction(FILE *file,
                                                        struct parser_group *group,
                                                        struct lexer_token *token)
 {
+    log_trace("Parser expecting DS-type pseudo-instruction");
     enum parser_status parse_status;
 
     if ((parse_status = parser_expect_register(file, token)) != PARSER_STATUS_SUCCESS) {
@@ -138,6 +145,7 @@ static enum parser_status parser_expect_dsi_instruction(FILE *file,
                                                         struct parser_group *group,
                                                         struct lexer_token *token)
 {
+    log_trace("Parser expecting DSI-type instruction");
     enum parser_status parse_status;
 
     if ((parse_status = parser_expect_register(file, token)) != PARSER_STATUS_SUCCESS) {
@@ -181,6 +189,7 @@ static enum parser_status parser_expect_dss_instruction(FILE *file,
                                                         struct parser_group *group,
                                                         struct lexer_token *token)
 {
+    log_trace("Parser expecting DSS-type instruction");
     enum parser_status parse_status;
 
     if ((parse_status = parser_expect_register(file, token)) != PARSER_STATUS_SUCCESS) {
@@ -278,9 +287,6 @@ static enum parser_status parser_expect_instruction(FILE *file,
                                                     struct lexer_token *token)
 {
     const struct isa_opcode_map *opcode_map = isa_get_opcode_map_from_symbol(token->text);
-
-    // TODO: handle pseudo instructions
-
     group->opcode = opcode_map->opcode;
 
     if (opcode_map->format == ISA_OPCODE_FORMAT_PSEUDO) {
@@ -308,7 +314,7 @@ static enum parser_status parser_expect_label(FILE *file,
     enum parser_status parse_status;
 
     group->imm_num = parser_instruction_count;
-    strncpy(group->imm_label, token->text, LEXER_TOKEN_MAX_LENGTH);
+    memcpy(group->imm_label, token->text, LEXER_TOKEN_MAX_LENGTH);
     group->imm_label[LEXER_TOKEN_MAX_LENGTH] = '\0';
 
     if ((parse_status = parser_expect_colon(file, token)) != PARSER_STATUS_SUCCESS) {
@@ -356,11 +362,13 @@ enum parser_status parser_next_group(FILE *file,
 
     const struct isa_opcode_map *opcode_map = isa_get_opcode_map_from_symbol(token->text);
     if (opcode_map != NULL) {
+        log_debug("Parser found opcode map for instruction '%s'", token->text);
         group->type = PARSER_GROUP_INSTRUCTION;
         parser_instruction_count += 4;
         return parser_expect_instruction(file, group, token);
     }
     else {
+        log_debug("Parser found no opcode map, expecting label");
         group->type = PARSER_GROUP_LABEL;
         return parser_expect_label(file, group, token);
     }
@@ -378,11 +386,16 @@ struct parser_group_node *parser_parse_file(FILE *file, uint16_t base_address) {
     struct parser_group_node *curr = NULL;
 
     struct lexer_token last_token = {0};
+    uint32_t num_groups = 0;
     while (true) {
+        num_groups++;
+
         struct parser_group group = {0};
         enum parser_status parse_status = parser_next_group(file, &group, &last_token);
+
         switch (parse_status) {
         case PARSER_STATUS_SUCCESS:
+            log_info("Parsed semantic group %" PRIu32 " successfully", num_groups);
             struct parser_group_node *new_node =
                 (struct parser_group_node *) malloc(sizeof(struct parser_group_node));
             new_node->group = group;
@@ -398,9 +411,10 @@ struct parser_group_node *parser_parse_file(FILE *file, uint16_t base_address) {
             }
             break;
         case PARSER_STATUS_EOF:
+            log_info("Parser reached end-of-file");
             return head;
         default:
-            log_error("unexpected token at line %" PRIu32 ", col %" PRIu32,
+            log_error("Unexpected token at line %" PRIu32 ", col %" PRIu32,
                       last_token.line, last_token.column);
             parser_free_group_nodes(head);
             return NULL;

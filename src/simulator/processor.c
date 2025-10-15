@@ -13,6 +13,7 @@ struct processor *create_processor(void) {
     struct processor *processor = (struct processor *) malloc(sizeof(struct processor));
     processor->memory = (struct memory *) malloc(sizeof(struct memory));
     processor->registers = (struct register_file *) malloc(sizeof(struct register_file));
+    processor->registers->ccount = 0;
     processor_assert_reset(processor);
     return processor;
 }
@@ -328,5 +329,6 @@ enum processor_status processor_tick(struct processor *processor) {
     if (processor->registers->pc == old_pc) {
         processor->registers->pc += sizeof(uint32_t);
     }
+    processor->registers->ccount++;
     return PROCESSOR_STATUS_SUCCESS;
 }
