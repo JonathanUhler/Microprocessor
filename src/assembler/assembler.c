@@ -12,11 +12,12 @@ void usage(const char *error) {
         log_error("%s", error);
     }
 
-    printf("usage: assembler [-o path] path\n");
+    printf("usage: assembler [-o path] [-v] path\n");
     printf("\n");
     printf("options:\n");
     printf("  -b addr  specify the base address to place code (default 0x0100)\n");
     printf("  -o path  specify the output path for the generated binary (default a.out)\n");
+    printf("  -v       verbosity level for log messages, can be specified multiple times\n");
     printf("\n");
     printf("argument:\n");
     printf("  path     the path to the assembly source file\n");
@@ -28,9 +29,10 @@ int main(int argc, char *argv[]) {
     char *output_path = "./a.out";
     char *input_path = NULL;
     uint16_t base_address = 0x0100;
+    enum logger_log_level verbosity = LOGGER_LEVEL_WARN;
 
     int flag;
-    while ((flag = getopt(argc, argv, "b:o:")) != -1) {
+    while ((flag = getopt(argc, argv, "b:o:v")) != -1) {
         switch (flag) {
         case 'b':
             base_address = atoi(optarg);
@@ -38,13 +40,16 @@ int main(int argc, char *argv[]) {
         case 'o':
             output_path = optarg;
             break;
+        case 'v':
+            verbosity++;
+            break;
         default:
             usage("unknown option flag");
             break;
         }
     }
 
-    logger_set_level(LOGGER_LEVEL_TRACE);
+    logger_set_level(verbosity);
 
     if (optind >= argc || argv[optind] == NULL) {
         usage("missing required 'path' argument");

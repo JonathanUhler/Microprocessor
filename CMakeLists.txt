@@ -24,6 +24,7 @@ add_executable(assembler
 target_link_libraries(assembler PRIVATE architecture)
 
 add_executable(simulator
+  ${SRC_DIR}/simulator/cli.c
   ${SRC_DIR}/simulator/simulator.c
   ${SRC_DIR}/simulator/memory.c
   ${SRC_DIR}/simulator/registers.c
