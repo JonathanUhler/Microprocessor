@@ -8,32 +8,26 @@
 
 
 static void cli_process_help(struct processor *processor, int argc, char **argv);
-static void cli_process_break(struct processor *processor, int argc, char **argv);
 static void cli_process_continue(struct processor *processor, int argc, char **argv);
 static void cli_process_load(struct processor *processor, int argc, char **argv);
 static void cli_process_quit(struct processor *processor, int argc, char **argv);
-static void cli_process_info_break(struct processor *processor, int argc, char **argv);
 static void cli_process_info_memory(struct processor *processor, int argc, char **argv);
 static void cli_process_info_registers(struct processor *processor, int argc, char **argv);
 static void cli_process_start(struct processor *processor, int argc, char **argv);
 static void cli_process_tick(struct processor *processor, int argc, char **argv);
-static void cli_process_unbreak(struct processor *processor, int argc, char **argv);
 static void cli_process_verbose(struct processor *processor, int argc, char **argv);
 
 
 static const struct cli_command_descriptor cli_command_table[] = {
     {"help", cli_process_help, NULL, "print command help information"},
-    {"break", cli_process_break, "<address>", "add a breakpoint at address"},
     {"continue", cli_process_continue, NULL,
-     "continue until reset is asserted, an error occurs, or a breakpoint is hit"},
+     "continue until reset is asserted or an error occurs"},
     {"load", cli_process_load, "<file> <address>", "load contents of binary file at address"},
     {"quit", cli_process_quit, NULL, "exit the simulator"},
-    {"info break", cli_process_info_break, NULL, "show all breakpoint numbers and their addresses"},
     {"info memory", cli_process_info_memory, "[[start:]end ...]", "show contents of main memory"},
     {"info registers", cli_process_info_registers, "[name ...]", "show contents of registers"},
     {"start", cli_process_start, NULL, "assert and deassert reset to cycle the simulated core"},
     {"tick", cli_process_tick, "[cycles]", "tick the clock by specified amount"},
-    {"unbreak", cli_process_unbreak, "<breakpoint>", "remove a breakpoint"},
     {"verbose", cli_process_verbose, "[level]", "set or view level of debug messages"}
 };
 
@@ -55,13 +49,6 @@ static void cli_process_help(struct processor *processor, int argc, char **argv)
 }
 
 
-static void cli_process_break(struct processor *processor, int argc, char **argv) {
-    (void) processor;
-    (void) argc;
-    (void) argv;
-}
-
-
 static void cli_process_continue(struct processor *processor, int argc, char **argv) {
     (void) argv;
 
@@ -77,7 +64,7 @@ static void cli_process_continue(struct processor *processor, int argc, char **a
 
     uint32_t cycles = 0;
     while (processor->registers->reset == 0x0000) {
-        enum processor_status tick_status = processor_tick(processor);  // MARK: add breakpoint detection
+        enum processor_status tick_status = processor_tick(processor);
         if (tick_status != PROCESSOR_STATUS_SUCCESS) {
             log_warn("Execution stopped after %" PRIu32 " cycles (errno %d)", cycles, tick_status);
             return;
@@ -106,18 +93,23 @@ static void cli_process_load(struct processor *processor, int argc, char **argv)
 
 
 static void cli_process_quit(struct processor *processor, int argc, char **argv) {
-    (void) processor;
     (void) argc;
     (void) argv;
+
+    if (processor->registers->reset == 0x0000) {
+        printf("Simulation is running. Really quit? (y/n) ");
+        char answer[CLI_MAX_COMMAND_LENGTH];
+        char *result = fgets(answer, sizeof(answer), stdin);
+        if (result == NULL) {
+            log_fatal("Could not read answer from standard input");
+        }
+
+        if (strcmp(answer, "y\n") != 0) {
+            return;
+        }
+    }
 
     exit(0);
-}
-
-
-static void cli_process_info_break(struct processor *processor, int argc, char **argv) {
-    (void) processor;
-    (void) argc;
-    (void) argv;
 }
 
 
@@ -143,8 +135,26 @@ static void cli_process_info_memory(struct processor *processor, int argc, char 
         }
 
         for (uint32_t addr = start; addr <= end; addr++) {
+            uint32_t byte_num = addr - start;
             uint8_t byte = memory_load_byte(processor->memory, addr);
-            printf("%02" PRIu8, byte);
+
+            if (byte_num % CLI_INFO_MEMORY_BYTES_PER_ROW == 0) {
+                printf("%04" PRIx16 ": ", addr);
+            }
+            if (byte_num % CLI_INFO_MEMORY_BYTES_PER_GROUP == 0) {
+                printf(" ");
+            }
+            printf("%02" PRIx8, byte);
+
+            if (byte_num % CLI_INFO_MEMORY_BYTES_PER_ROW == CLI_INFO_MEMORY_BYTES_PER_ROW - 1 ||
+                addr == end)
+            {
+                printf("\n");
+            }
+        }
+
+        if (i < (uint32_t) (argc - 1)) {
+            printf("...\n");
         }
     }
 }
@@ -239,19 +249,12 @@ static void cli_process_tick(struct processor *processor, int argc, char **argv)
     }
 
     for (uint32_t i = 0; i < num_cycles; i++) {
-        enum processor_status tick_status = processor_tick(processor);  // MARK: add breakpoint detection
+        enum processor_status tick_status = processor_tick(processor);
         if (tick_status != PROCESSOR_STATUS_SUCCESS) {
             log_warn("Execution stopped before requested number of cycles (errno %d)", tick_status);
             return;
         }
     }
-}
-
-
-static void cli_process_unbreak(struct processor *processor, int argc, char **argv) {
-    (void) processor;
-    (void) argc;
-    (void) argv;
 }
 
 
@@ -299,6 +302,7 @@ void cli_run(struct processor *processor) {
             log_fatal("Could not read command from standard input");
         }
 
+        bool found_command = false;
         size_t num_commands = sizeof(cli_command_table) / sizeof(cli_command_table[0]);
         for (size_t i = 0; i < num_commands; i++) {
             struct cli_command_descriptor descriptor = cli_command_table[i];
@@ -308,8 +312,14 @@ void cli_run(struct processor *processor) {
                 char *argv[CLI_MAX_COMMAND_ARGUMENTS];
                 cli_extract_arguments(command + strlen(descriptor.name), &argc, argv);
                 descriptor.handler(processor, argc, argv);
+                found_command = true;
                 break;
             }
+        }
+
+        if (strlen(command) > 1 && !found_command) {
+            log_error("Unknown command. Try 'help'")
+            continue;
         }
     }
 }

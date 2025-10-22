@@ -5,8 +5,11 @@
 #include "simulator/processor.h"
 
 
-#define CLI_MAX_COMMAND_LENGTH 128
-#define CLI_MAX_COMMAND_ARGUMENTS 32
+#define CLI_MAX_COMMAND_LENGTH    128
+#define CLI_MAX_COMMAND_ARGUMENTS  32
+
+#define CLI_INFO_MEMORY_BYTES_PER_ROW   16
+#define CLI_INFO_MEMORY_BYTES_PER_GROUP  2
 
 
 struct cli_command_descriptor {
