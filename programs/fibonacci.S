@@ -8,7 +8,7 @@ _start:
         li s0, 10               ; Load final value of loop index variable (exclusive)
 for_check:
         lt t2, t3, s0           ; t2 = i < 10 (whether loop is done)
-        jz t2, for_done
+        j0 t2, for_done
 for_body:
         add t2, t0, t1          ; temp = A + B
         mv t0, t1               ; A = B

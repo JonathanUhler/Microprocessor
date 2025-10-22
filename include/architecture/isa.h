@@ -166,8 +166,8 @@ enum isa_opcode {
     SRAI = 0b011110,
     LD   = 0b110010,
     ST   = 0b110110,
-    JLZ  = 0b111010,
-    JLO  = 0b111110,
+    JL0  = 0b111010,
+    JL1  = 0b111110,
 
     // Fourth row (DSS-Type)
     ADD  = 0b000011,
@@ -182,8 +182,8 @@ enum isa_opcode {
     GT   = 0b100111,
     LT   = 0b101011,
     NE   = 0b101111,
-    JLRZ = 0b111011,
-    JLRO = 0b111111
+    JLR0 = 0b111011,
+    JLR1 = 0b111111
 };
 
 

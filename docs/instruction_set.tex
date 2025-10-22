@@ -297,7 +297,7 @@ Assembler format: \verb|halt imm|
 
 Halt processor execution with the exit code in Immediate until reset is next released.
 
-\subsubsection{JLO - Jump and Link on One}
+\subsubsection{JL1 - Jump and Link on One}
 \begin{bytefield}[bitwidth=0.4cm]{32}
   \bitheader[endianness=big]{0-31}
   \\
@@ -310,12 +310,12 @@ Halt processor execution with the exit code in Immediate until reset is next rel
 
 Meaning: \verb|if (R[Source1] == 1) { R[Dest] <- PC + 4; PC <- Immediate }|
 
-Assembler format: \verb|jlo rd, rs1, imm|
+Assembler format: \verb|jl1 rd, rs1, imm|
 
 If Source 1 is ONE, store the address of the next instruction in Dest and jump to the absolute
 address in Immediate.
 
-\subsubsection{JLRO - Jump and Link Register on One}
+\subsubsection{JLR1 - Jump and Link Register on One}
 \begin{bytefield}[bitwidth=0.4cm]{32}
   \bitheader[endianness=big]{0-31}
   \\
@@ -329,12 +329,12 @@ address in Immediate.
 
 Meaning: \verb|if (R[Source1] == 1) { R[Dest] <- PC + 4; PC <- R[Source2] }|
 
-Assembler format: \verb|jlro rd, rs1, rs2|
+Assembler format: \verb|jlr1 rd, rs1, rs2|
 
 If Source 1 is ONE, store the address of the next instruction in Dest and jump to the absolute
 address in Source 2.
 
-\subsubsection{JLRZ - Jump and Link Register on Zero}
+\subsubsection{JLR0 - Jump and Link Register on Zero}
 \begin{bytefield}[bitwidth=0.4cm]{32}
   \bitheader[endianness=big]{0-31}
   \\
@@ -348,12 +348,12 @@ address in Source 2.
 
 Meaning: \verb|if (R[Source1] == 0) { R[Dest] <- PC + 4; PC <- R[Source2] }|
 
-Assembler format: \verb|jlrz rd, rs1, rs2|
+Assembler format: \verb|jlr0 rd, rs1, rs2|
 
 If Source 1 is ZERO, store the address of the next instruction in Dest and jump to the absolute
 address in Source 2.
 
-\subsubsection{JLZ - Jump and Link on Zero}
+\subsubsection{JL0 - Jump and Link on Zero}
 \begin{bytefield}[bitwidth=0.4cm]{32}
   \bitheader[endianness=big]{0-31}
   \\
@@ -366,7 +366,7 @@ address in Source 2.
 
 Meaning: \verb|if (R[Source1] == 0) { R[Dest] <- PC + 4; PC <- Immediate }|
 
-Assembler format: \verb|jlz rd, rs1, imm|
+Assembler format: \verb|jl0 rd, rs1, imm|
 
 If Source 1 is ZERO, store the address of the next instruction in Dest and jump to the absolute
 address in Immediate.
@@ -668,8 +668,8 @@ row.
   \hline
   00 & halt &      &      &      &      &      &      &      &      &      &      &      &      &      &      &      \\
   01 &      &      &      &      &      &      &      &      &      &      &      &      &      &      &      &      \\
-  10 & addi & subi & andi & ori  & xori & slli & srli & srai &      &      &      &      & ld   & st   & jlz  & jlo  \\
-  11 & add  & sub  & and  & or   & xor  & sll  & srl  & sra  & eq   & gt   & lt   & ne   &      &      & jlrz & jlro
+  10 & addi & subi & andi & ori  & xori & slli & srli & srai &      &      &      &      & ld   & st   & jl0  & jl1  \\
+  11 & add  & sub  & and  & or   & xor  & sll  & srl  & sra  & eq   & gt   & lt   & ne   &      &      & jlr0 & jlr1
 \end{tabular}
 }
 
@@ -689,7 +689,7 @@ Meaning: \verb|PC <- Immediate|
 
 Assembler format: \verb|j imm|
 
-Implementation: \verb|jlz r0, r0, imm|
+Implementation: \verb|jl0 r0, r0, imm|
 
 Unconditionally jump to absolute address in Immediate.
 
@@ -698,7 +698,7 @@ Meaning: \verb|R[Dest] <- PC + 4; PC <- Immediate|
 
 Assembler format: \verb|jl rd, imm|
 
-Implementation: \verb|jlz rd, r0, imm|
+Implementation: \verb|jl0 rd, r0, imm|
 
 Unconditionally store the address of the next instruction in Dest and jump to the absolute
 address in Immediate.
@@ -708,26 +708,26 @@ Meaning: \verb|R[Dest] <- PC + 4; PC <- R[Source1]|
 
 Assembler format: \verb|jlr rd, rs1|
 
-Implementation: \verb|jlrz rd, r0, rs1|
+Implementation: \verb|jlr0 rd, r0, rs1|
 
 Unconditionally store the address of the next instruction in Dest and jump to the absolute
 address in Source 1.
 
-\subsubsection{JO - Jump on One}
+\subsubsection{J1 - Jump on One}
 Meaning: \verb|if (R[Source1] == 1) { PC <- Immediate }|
 
-Assembler format: \verb|jo rs1, imm|
+Assembler format: \verb|j1 rs1, imm|
 
-Implementation: \verb|jlo r0, rs1, imm|
+Implementation: \verb|jl1 r0, rs1, imm|
 
 If Source 1 is ONE, jump to the absolute address in Immediate.
 
-\subsubsection{JZ - Jump on Zero}
+\subsubsection{J0 - Jump on Zero}
 Meaning: \verb|if (R[Source1] == 0) { PC <- Immediate }|
 
-Assembler format: \verb|jz rs1, imm|
+Assembler format: \verb|j0 rs1, imm|
 
-Implementation: \verb|jlz r0, rs1, imm|
+Implementation: \verb|jl0 r0, rs1, imm|
 
 If Source 1 is ZERO, jump to the absolute address in Immediate.
 
@@ -736,7 +736,7 @@ Meaning: \verb|RA <- PC + 4; PC <- Immediate|
 
 Assembler format: \verb|call imm|
 
-Implementation: \verb|jlz ra, r0, imm|
+Implementation: \verb|jl0 ra, r0, imm|
 
 Jump to Immediate and store the address of the next instruction in the return address register.
 
@@ -772,7 +772,7 @@ Meaning: \verb|PC <- RA|
 
 Assembler format: \verb|ret|
 
-Implementation: \verb|jlrz r0, r0, ra|
+Implementation: \verb|jlr0 r0, r0, ra|
 
 Jump to the value in the return address register.
 

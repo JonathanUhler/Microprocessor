@@ -239,12 +239,12 @@ static enum parser_status parser_expect_pseudo_instruction(FILE *file,
         group->rs2 = group->rs1;
         group->rs1 = ZERO;
     }
-    else if (strncmp(token->text, "jo", ISA_OPCODE_SYMBOL_MAX_LENGTH) == 0) {
+    else if (strncmp(token->text, "j1", ISA_OPCODE_SYMBOL_MAX_LENGTH) == 0) {
         parse_status = parser_expect_di_instruction(file, group, token);
         group->rs1 = group->rd;
         group->rd = ZERO;
     }
-    else if (strncmp(token->text, "jz", ISA_OPCODE_SYMBOL_MAX_LENGTH) == 0) {
+    else if (strncmp(token->text, "j0", ISA_OPCODE_SYMBOL_MAX_LENGTH) == 0) {
         parse_status = parser_expect_di_instruction(file, group, token);
         group->rs1 = group->rd;
         group->rd = ZERO;

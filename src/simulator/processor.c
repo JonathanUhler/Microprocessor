@@ -173,14 +173,14 @@ static enum processor_status processor_execute_dsi_type(struct processor *proces
         memory_store_halfword(memory, addr, registers_read(registers, dest));
         break;
     }
-    case JLZ: {
+    case JL0: {
         if (registers_read(registers, source1) == 0x0000) {
             registers_write(registers, dest, registers->pc + sizeof(uint32_t));
             registers->pc = immediate;
         }
         break;
     }
-    case JLO: {
+    case JL1: {
         if (registers_read(registers, source1) == 0x0001) {
             registers_write(registers, dest, registers->pc + sizeof(uint32_t));
             registers->pc = immediate;
@@ -262,14 +262,14 @@ static enum processor_status processor_execute_dss_type(struct processor *proces
         registers_write(registers, dest,
                         registers_read(registers, source1) != registers_read(registers, source2));
         break;
-    case JLRZ: {
+    case JLR0: {
         if (registers_read(registers, source1) == 0x0000) {
             registers_write(registers, dest, registers->pc + sizeof(uint32_t));
             registers->pc = registers_read(registers, source2);
         }
         break;
     }
-    case JLRO: {
+    case JLR1: {
         if (registers_read(registers, source1) == 0x0001) {
             registers_write(registers, dest, registers->pc + sizeof(uint32_t));
             registers->pc = registers_read(registers, source2);
