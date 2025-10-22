@@ -43,6 +43,9 @@ enum processor_status processor_load_program(struct processor *processor,
 
         memory_store_byte(processor->memory, address + bytes_read, byte);
         bytes_read++;
+        if (address + bytes_read > UINT16_MAX) {
+            return PROCESSOR_STATUS_OUT_OF_MEMORY;
+        }
     }
 
     log_info("Loaded %" PRIu32 " bytes into instruction memory at 0x%04" PRIx16,

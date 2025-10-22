@@ -6,6 +6,7 @@
 
 
 #define CLI_MAX_COMMAND_LENGTH 128
+#define CLI_MAX_COMMAND_ARGUMENTS 32
 
 
 struct cli_command_descriptor {
