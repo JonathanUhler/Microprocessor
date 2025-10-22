@@ -52,6 +52,29 @@ static bool lexer_skip_whitespace(FILE *file) {
 
 
 /**
+ * Checks whether the read pointer in the specified file is currently pointing at the start of
+ * a comment, and skips that comment if available.
+ *
+ * @param[inout] file  The file to skip comments in.
+ *
+ * @return Whether a comment was successfully skipped.
+ */
+static bool lexer_skip_comments(FILE *file) {
+    int c = fgetc(file);
+    if (c != ';') {
+        ungetc(c, file);
+        return false;
+    }
+
+    while (c != '\n') {
+        c = fgetc(file);
+        lexer_current_column++;
+    }
+    return true;
+}
+
+
+/**
  * Checks whether the read pointer in the specified file is currently pointing at a punctuation
  * token, and parses that token if possible.
  *
@@ -199,6 +222,15 @@ enum lexer_status lexer_next_token(FILE *file, struct lexer_token *token) {
         lexer_current_line = 1;
         lexer_current_column = 0;
         return LEXER_STATUS_EOF;
+    }
+
+    // Skip comments from the current file pointer. If this returns true, that means a comment
+    // was skipped (from the ; symbol to end of line) and so we want to continue to get the next
+    // real token on the start of the next line.
+    if (lexer_skip_comments(file)) {
+        lexer_current_line++;
+        lexer_current_column = 0;
+        return lexer_next_token(file, token);
     }
 
     // At this point we have reached a real (non-whitespace, non-comment) character to parse.

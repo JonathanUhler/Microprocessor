@@ -767,24 +767,6 @@ Implementation: \verb|or r0, r0, r0|
 
 Do nothing.
 
-\subsubsection{POP - Pop Register From Stack}
-Meaning: \verb|SP <- SP + 2; R[Source1] <- M[SP]|
-
-Assembler format: \verb|pop rs1|
-
-Implementation: \verb|addi sp, sp, 4| then \verb|ld rs1, sp, 0|
-
-Increment the stack pointer and restore the value in memory to Source 1.
-
-\subsubsection{PUSH - Push Register Onto Stack}
-Meaning: \verb|M[SP] <- R[Source1]; SP <- SP - 2|
-
-Assembler format: \verb|push rs1|
-
-Implementation: \verb|st rs1, sp, 0| then \verb|subi sp, sp 4|
-
-Write the value in Source 1 to the active stack and decrement the stack pointer.
-
 \subsubsection{RET - Return From Subroutine}
 Meaning: \verb|PC <- RA|
 
