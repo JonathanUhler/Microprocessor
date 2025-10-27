@@ -9,7 +9,7 @@
 #include <stdlib.h>
 
 
-static uint32_t parser_instruction_count = 0;
+static uint32_t parser_pc = 0;
 
 
 static enum parser_status parser_expect_register(FILE *file, struct lexer_token *token) {
@@ -49,6 +49,16 @@ static enum parser_status parser_expect_colon(FILE *file, struct lexer_token *to
     log_trace("Parser expecting colon separator");
     enum lexer_status lex_status = lexer_next_token(file, token);
     if (lex_status != LEXER_STATUS_SUCCESS || token->type != LEXER_TOKEN_COLON) {
+        return PARSER_STATUS_SEMANTIC_ERROR;
+    }
+    return PARSER_STATUS_SUCCESS;
+}
+
+
+static enum parser_status parser_expect_period(FILE *file, struct lexer_token *token) {
+    log_trace("Parser expecting period separator");
+    enum lexer_status lex_status = lexer_next_token(file, token);
+    if (lex_status != LEXER_STATUS_SUCCESS || token->type != LEXER_TOKEN_PERIOD) {
         return PARSER_STATUS_SEMANTIC_ERROR;
     }
     return PARSER_STATUS_SUCCESS;
@@ -313,7 +323,7 @@ static enum parser_status parser_expect_label(FILE *file,
 {
     enum parser_status parse_status;
 
-    group->imm_num = parser_instruction_count;
+    group->imm_num = parser_pc;
     memcpy(group->imm_label, token->text, LEXER_TOKEN_MAX_LENGTH);
     group->imm_label[LEXER_TOKEN_MAX_LENGTH] = '\0';
 
@@ -364,7 +374,7 @@ enum parser_status parser_next_group(FILE *file,
     if (opcode_map != NULL) {
         log_debug("Parser found opcode map for instruction '%s'", token->text);
         group->type = PARSER_GROUP_INSTRUCTION;
-        parser_instruction_count += 4;
+        parser_pc += sizeof(uint32_t);
         return parser_expect_instruction(file, group, token);
     }
     else {
@@ -380,7 +390,7 @@ struct parser_group_node *parser_parse_file(FILE *file, uint16_t base_address) {
         return NULL;
     }
 
-    parser_instruction_count = base_address;
+    parser_pc = base_address;
 
     struct parser_group_node *head = NULL;
     struct parser_group_node *curr = NULL;
