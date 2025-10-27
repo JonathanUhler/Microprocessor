@@ -33,7 +33,9 @@ enum lexer_token_type {
     /** A comma separating operands. */
     LEXER_TOKEN_COMMA      = ',',
     /** A colon at the end of a label declaration. */
-    LEXER_TOKEN_COLON      = ':'
+    LEXER_TOKEN_COLON      = ':',
+    /** A period at the beginning of a directive. */
+    LEXER_TOKEN_PERIOD     = '.'
 };
 
 

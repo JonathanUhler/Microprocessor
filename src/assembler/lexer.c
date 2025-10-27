@@ -87,14 +87,12 @@ static bool lexer_check_punctuation(FILE *file, struct lexer_token *token) {
     int c = fgetc(file);
 
     switch (c) {
-    case ',':
-        token->type = LEXER_TOKEN_COMMA;
-        strncpy(token->text, ",", LEXER_TOKEN_MAX_LENGTH);
-        lexer_current_column++;
-        return true;
-    case ':':
-        token->type = LEXER_TOKEN_COLON;
-        strncpy(token->text, ":", LEXER_TOKEN_MAX_LENGTH);
+    case LEXER_TOKEN_COMMA:
+    case LEXER_TOKEN_COLON:
+    case LEXER_TOKEN_PERIOD:
+        token->type = c;
+        token->text[0] = c;
+        token->text[1] = '\n';
         lexer_current_column++;
         return true;
     default:

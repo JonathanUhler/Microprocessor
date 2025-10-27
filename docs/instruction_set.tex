@@ -776,4 +776,24 @@ Implementation: \verb|jlr0 r0, r0, ra|
 
 Jump to the value in the return address register.
 
+
+\section{Other Assembler Syntax}
+
+\subsection{Labels}
+Labels are programmer-defined names that will be translated to addresses by the assembler. Label
+names can be lower- and uppercase characters, underscores, and numbers, but cannot start with
+a number.
+
+\subsection{Directives}
+Directives are used to change the machine code generation behavior of the assembler. The following
+directives are avialable.
+
+\begin{tabular}{|c|l|}
+  Directive & Purpose \\
+  \hline
+  \verb|.loc offset| & Set the offset in the generated binary to \verb|offset|. \\
+  \verb|.half data| & Store the constant halfword \verb|data| in memory. \\
+  \verb|.array data, ...| & Store the list of constant halfwords in memory.
+\end{tabular}
+
 \end{document}
