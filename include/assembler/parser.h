@@ -48,6 +48,31 @@ struct parser_group_label {
 };
 
 
+enum parser_directive_type {
+    PARSER_DIRECTIVE_LOC,
+    PARSER_DIRECTIVE_HALF
+};
+
+
+struct parser_directive_loc {
+    uint16_t num_pad_bytes;
+};
+
+
+struct parser_directive_half {
+    uint16_t element;
+};
+
+
+struct parser_group_directive {
+    enum parser_directive_type type;
+    union {
+        struct parser_directive_loc loc;
+        struct parser_directive_half half;
+    };
+};
+
+
 /**
  * A structure representing a single group of tokens that form a single semantic unit.
  */
@@ -57,6 +82,7 @@ struct parser_group {
     union {
         struct parser_group_instruction instruction;
         struct parser_group_label label;
+        struct parser_group_directive directive;
     };
 };
 

@@ -303,14 +303,14 @@ enum lexer_status lexer_lex_file(FILE *file, struct list **tokens) {
             list_add(*tokens, (void *) token);
             break;
         case LEXER_STATUS_EOF:
-            log_info("Lexer reached end-of-file successfully");
+            log_info("Lexer finished successfully (tokens found: %" PRIu32 ")", (*tokens)->size);
             free(token);
             return LEXER_STATUS_SUCCESS;
         default:
             log_error("Lexer could not parse token at line %" PRIu32 ", col %" PRIu32 " (errno %d)",
                       lexer_current_line, lexer_current_column, lex_status);
             destroy_list(*tokens, &list_default_node_free_callback);
-            free(token);
+             free(token);
             return lex_status;
         }
     }

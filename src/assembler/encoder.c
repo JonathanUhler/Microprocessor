@@ -4,6 +4,7 @@
 #include "architecture/logger.h"
 #include "structures/list.h"
 #include <inttypes.h>
+#include <limits.h>
 #include <stdint.h>
 
 
@@ -54,12 +55,7 @@ static enum encoder_status encoder_resolve_labels(struct list *groups) {
 }
 
 
-enum encoder_status encoder_encode_groups(struct list *groups) {
-    enum encoder_status label_resolution_status = encoder_resolve_labels(groups);
-    if (label_resolution_status != ENCODER_STATUS_SUCCESS) {
-        return label_resolution_status;
-    }
-
+static enum encoder_status encoder_resolve_instructions(struct list *groups) {
     for (uint32_t i = 0; i < groups->size; i++) {
         void *data;
         list_peek_at(groups, i, &data);
@@ -71,7 +67,8 @@ enum encoder_status encoder_encode_groups(struct list *groups) {
         const struct isa_opcode_map *opcode_map =
             isa_get_opcode_map_from_opcode(group->instruction.opcode);
         if (opcode_map == NULL) {
-            continue;
+            log_error("Encoder could not resolve instruction opcode %d", group->instruction.opcode);
+            return ENCODER_STATUS_UNEXPECTED_GROUP;
         }
 
         union isa_instruction instruction;
@@ -111,3 +108,69 @@ enum encoder_status encoder_encode_groups(struct list *groups) {
     return ENCODER_STATUS_SUCCESS;
 }
 
+
+static void encoder_convert_instruction(struct list *bytes, struct parser_group *instruction) {
+    for (uint32_t b = 0; b < sizeof(uint32_t); b++) {
+        uint8_t *byte = (uint8_t *) malloc(sizeof(uint8_t));
+        *byte = (instruction->instruction.binary >> (b * CHAR_BIT)) & UINT8_MAX;
+        list_add(bytes, (void *) byte);
+        log_trace("Encoder added instruction[%" PRIu32 "] = %02" PRIx8, b, *byte);
+    }
+}
+
+
+static void encoder_convert_directive(struct list *bytes, struct parser_group *directive) {
+    switch (directive->directive.type) {
+    case PARSER_DIRECTIVE_LOC:
+        for (uint32_t b = 0; b < directive->directive.loc.num_pad_bytes; b++) {
+            uint8_t *byte = (uint8_t *) calloc(1, sizeof(uint8_t));
+            list_add(bytes, (void *) byte);
+        }
+        break;
+    case PARSER_DIRECTIVE_HALF:   
+        for (uint32_t b = 0; b < sizeof(uint16_t); b++) {
+            uint8_t *byte = (uint8_t *) malloc(sizeof(uint8_t));
+            *byte = (directive->directive.half.element >> (b * CHAR_BIT)) & UINT8_MAX;
+            list_add(bytes, (void *) byte);
+        }
+        break;
+    }
+}
+
+
+enum encoder_status encoder_encode_groups(struct list *groups, struct list **bytes) {
+    enum encoder_status label_resolution_status = encoder_resolve_labels(groups);
+    if (label_resolution_status != ENCODER_STATUS_SUCCESS) {
+        return label_resolution_status;
+    }
+
+    enum encoder_status instruction_resolution_status = encoder_resolve_instructions(groups);
+    if (instruction_resolution_status != ENCODER_STATUS_SUCCESS) {
+        return instruction_resolution_status;
+    }
+
+    *bytes = create_list();
+
+    for (uint32_t i = 0; i < groups->size; i++) {
+        void *data;
+        list_peek_at(groups, i, &data);
+        struct parser_group *group = (struct parser_group *) data;
+
+        switch (group->type) {
+        case PARSER_GROUP_INSTRUCTION:
+            log_debug("Encoder found instruction group");
+            encoder_convert_instruction(*bytes, group);
+            break;
+        case PARSER_GROUP_DIRECTIVE:
+            log_debug("Encoder found directive group");
+            encoder_convert_directive(*bytes, group);
+            break;
+        default:
+            log_fatal("Encoder found unexpected semantic group of type %d", group->type);
+            break;
+        }
+    }
+
+    log_info("Encoder finished successfully (bytes encoded: %" PRIu32 ")", (*bytes)->size);
+    return ENCODER_STATUS_SUCCESS;
+}
