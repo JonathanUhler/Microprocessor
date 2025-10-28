@@ -438,12 +438,8 @@ static enum parser_status parser_expect_instruction(struct list *tokens, struct 
 
     void *data;
     enum list_status list_status = list_peek_at(tokens, 0, &data);
-    if (list_status != LIST_STATUS_SUCCESS) {
-        return PARSER_STATUS_SEMANTIC_ERROR;
-    }
-
     struct lexer_token *token = (struct lexer_token *) data;
-    if (token->type != LEXER_TOKEN_IDENTIFIER) {
+    if (list_status != LIST_STATUS_SUCCESS || token->type != LEXER_TOKEN_IDENTIFIER) {
         return PARSER_STATUS_SEMANTIC_ERROR;
     }
 
@@ -503,6 +499,129 @@ static enum parser_status parser_expect_label(struct list *tokens, struct parser
 }
 
 
+static enum parser_status parser_expect_loc_directive(struct list *tokens,
+                                                      struct parser_group *group)
+{
+    log_debug("Parser checking for .loc directive");
+
+    enum lexer_token_type period = LEXER_TOKEN_PERIOD;
+    enum lexer_token_type identifier = LEXER_TOKEN_IDENTIFIER;
+    enum lexer_token_type number = LEXER_TOKEN_NUMBER;
+
+    struct list *sequence = create_list();
+    list_add(sequence, &period);
+    list_add(sequence, &identifier);
+    list_add(sequence, &number);
+
+    enum parser_status match_status = parser_expect_sequence(tokens, sequence);
+    destroy_list(sequence, NULL);
+    if (match_status != PARSER_STATUS_SUCCESS) {
+        return PARSER_STATUS_SEMANTIC_ERROR;
+    }
+
+    void *data;
+    struct lexer_token *token;
+
+    // Period
+    list_pop_front(tokens, &data);
+    token = (struct lexer_token *) data;
+    free(token);
+    // Identifier
+    list_pop_front(tokens, &data);
+    token = (struct lexer_token *) data;
+    free(token);
+    // Number
+    list_pop_front(tokens, &data);
+    token = (struct lexer_token *) data;
+    if (token->value < parser_pc) {
+        log_fatal(".loc 0x%04" PRIx16 " directive is before pc (0x%04" PRIx16 ")",
+                  token->value, parser_pc);
+    }
+    group->directive.loc.num_pad_bytes = token->value - parser_pc;
+    parser_pc = token->value;
+    free(token);
+
+    return PARSER_STATUS_SUCCESS;
+}
+
+
+static enum parser_status parser_expect_half_directive(struct list *tokens,
+                                                       struct parser_group *group)
+{
+    log_debug("Parser checking for .half directive");
+
+    enum lexer_token_type period = LEXER_TOKEN_PERIOD;
+    enum lexer_token_type identifier = LEXER_TOKEN_IDENTIFIER;
+    enum lexer_token_type number = LEXER_TOKEN_NUMBER;
+
+    struct list *sequence = create_list();
+    list_add(sequence, &period);
+    list_add(sequence, &identifier);
+    list_add(sequence, &number);
+
+    enum parser_status match_status = parser_expect_sequence(tokens, sequence);
+    destroy_list(sequence, NULL);
+    if (match_status != PARSER_STATUS_SUCCESS) {
+        return PARSER_STATUS_SEMANTIC_ERROR;
+    }
+
+    void *data;
+    struct lexer_token *token;
+
+    // Period
+    list_pop_front(tokens, &data);
+    token = (struct lexer_token *) data;
+    free(token);
+    // Identifier
+    list_pop_front(tokens, &data);
+    token = (struct lexer_token *) data;
+    free(token);
+    // Number
+    list_pop_front(tokens, &data);
+    token = (struct lexer_token *) data;
+    group->directive.half.element = token->value;
+    free(token);
+
+    return PARSER_STATUS_SUCCESS;
+}
+
+
+static enum parser_status parser_expect_directive(struct list *tokens, struct parser_group *group) {
+    log_debug("Parser checking for directive");
+    group->type = PARSER_GROUP_DIRECTIVE;
+
+    void *data;
+    enum list_status list_status;
+    struct lexer_token *token;
+
+    list_status = list_peek_at(tokens, 0, &data);
+    token = (struct lexer_token *) data;
+    if (list_status != LIST_STATUS_SUCCESS || token->type != LEXER_TOKEN_PERIOD) {
+        return PARSER_STATUS_SEMANTIC_ERROR;
+    }
+
+    list_status = list_peek_at(tokens, 1, &data);
+    token = (struct lexer_token *) data;
+    if (list_status != LIST_STATUS_SUCCESS || token->type != LEXER_TOKEN_IDENTIFIER) {
+        return PARSER_STATUS_SEMANTIC_ERROR;
+    }
+
+    enum parser_status parse_status;
+    if (strncmp(token->text, "loc", LEXER_TOKEN_MAX_LENGTH) == 0) {
+        group->directive.type = PARSER_DIRECTIVE_LOC;
+        parse_status = parser_expect_loc_directive(tokens, group);
+    }
+    else if (strncmp(token->text, "half", LEXER_TOKEN_MAX_LENGTH) == 0) {
+        group->directive.type = PARSER_DIRECTIVE_HALF;
+        parse_status = parser_expect_half_directive(tokens, group);
+    }
+    else {
+        return PARSER_STATUS_SEMANTIC_ERROR;
+    }
+    return parse_status;
+}
+
+
 static enum parser_status parser_next_group(struct list *tokens,
                                             struct parser_group *group)
 {
@@ -519,6 +638,13 @@ static enum parser_status parser_next_group(struct list *tokens,
         parser_pc += sizeof(uint32_t);
         return PARSER_STATUS_SUCCESS;
     }
+    else if (parser_expect_directive(tokens, group) == PARSER_STATUS_SUCCESS) {
+        log_debug("Parser found a directive");
+        if (group->directive.type == PARSER_DIRECTIVE_HALF) {
+            parser_pc += sizeof(uint16_t);
+        }
+        return PARSER_STATUS_SUCCESS;
+    }
     else {
         group->type = PARSER_GROUP_EOF;
         return PARSER_STATUS_SEMANTIC_ERROR;
@@ -526,15 +652,12 @@ static enum parser_status parser_next_group(struct list *tokens,
 }
 
 
-enum parser_status parser_parse_tokens(struct list *tokens,
-                                       uint16_t base_address,
-                                       struct list **groups)
-{
+enum parser_status parser_parse_tokens(struct list *tokens, struct list **groups) {
     if (tokens == NULL || groups == NULL) {
         return PARSER_STATUS_INVALID_ARGUMENT;
     }
 
-    parser_pc = base_address;
+    parser_pc = 0x0000;
     *groups = create_list();
 
     uint32_t num_groups = 0;
@@ -549,7 +672,7 @@ enum parser_status parser_parse_tokens(struct list *tokens,
             list_add(*groups, (void *) group);
             break;
         case PARSER_STATUS_EOF:
-            log_info("Parser reached end-of-file successfully");
+            log_info("Parser finished successfully (groups found: %" PRIu32 ")", (*groups)->size);
             free(group);
             return PARSER_STATUS_SUCCESS;
         default:

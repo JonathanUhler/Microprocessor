@@ -1,35 +1,17 @@
+        .loc 0x100
 _start:
         li sp, 0xFFFE
 
-        li a0, 0x6000
-        li a1, 10
-
-        li t0, 33
-        st t0, a0, 0
-        li t0, 91
-        st t0, a0, 2
-        li t0, 96
-        st t0, a0, 4
-        li t0, 40
-        st t0, a0, 6
-        li t0, 5
-        st t0, a0, 8
-        li t0, 32
-        st t0, a0, 10
-        li t0, 26
-        st t0, a0, 12
-        li t0, 2
-        st t0, a0, 14
-        li t0, 56
-        st t0, a0, 16
-        li t0, 44
-        st t0, a0, 18
+        li a0, array
+        li a1, array_size
+        ld a1, a1, 0
 
         call main
 
         halt 0
 
 
+        .loc 0x200
 main:
         li t0, 0                ; Outer loop index variable
 L_outer_loop_check:
@@ -65,3 +47,19 @@ L_inner_loop_done:
         j L_outer_loop_check
 L_outer_loop_done:
         ret
+
+
+        .loc 0x6000
+array:
+        .half 33
+        .half 91
+        .half 96
+        .half 40
+        .half 5
+        .half 32
+        .half 26
+        .half 2
+        .half 56
+        .half 44
+array_size:
+        .half 10

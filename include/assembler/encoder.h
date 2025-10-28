@@ -25,7 +25,9 @@ enum encoder_status {
     /** The encoder operation was successful. */
     ENCODER_STATUS_SUCCESS = 0,
     /** The encoder encountered an undefined label. */
-    ENCODER_STATUS_UNKNOWN_LABEL
+    ENCODER_STATUS_UNKNOWN_LABEL,
+    /** The encoder encountered an unexpected semantic group. */
+    ENCODER_STATUS_UNEXPECTED_GROUP
 };
 
 
@@ -44,14 +46,15 @@ enum encoder_status {
  * After encoding, the caller is still responsible for using the list API to free the nodes left
  * in the provided list.
  *
- * @param groups  List of parser group nodes to encode.
+ * @param groups[inout]  List of parser group nodes to encode. Groups will be popped from this list.
+ * @param bytes[out]     A pointer to return a list of encoded bytes. It is the caller's
+ *                       responsibility to free this list with the structures/list API. The bytes
+ *                       themselves must be freed with the list_default_node_free_callback.
  *
  * @return Whether encoding was successful. If SUCCESS, the encoded binary can be read by traversing
- *         the groups list and reading the .binary member of each instruction node. On error, the
- *         state/order of nodes in the groups list is not guaranteed. In either case, the caller is
- *         still responsible for freeing groups with the list API.
+ *         the bytes list. On error, the state/order of nodes in the groups list is not guaranteed.
  */
-enum encoder_status encoder_encode_groups(struct list *groups);
+enum encoder_status encoder_encode_groups(struct list *groups, struct list **bytes);
 
 
 #endif  // _ASSEMBLER_ENCODER_H_

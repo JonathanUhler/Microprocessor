@@ -16,7 +16,6 @@ void usage(const char *error) {
     printf("usage: assembler [-o path] [-v] path\n");
     printf("\n");
     printf("options:\n");
-    printf("  -b addr  specify the base address to place code (default 0x0100)\n");
     printf("  -o path  specify the output path for the generated binary (default a.out)\n");
     printf("  -v       verbosity level for log messages, can be specified multiple times\n");
     printf("\n");
@@ -29,15 +28,11 @@ void usage(const char *error) {
 int main(int argc, char *argv[]) {
     char *output_path = "./a.out";
     char *input_path = NULL;
-    uint16_t base_address = 0x0100;
     enum logger_log_level verbosity = LOGGER_LEVEL_WARN;
 
     int flag;
-    while ((flag = getopt(argc, argv, "b:o:v")) != -1) {
+    while ((flag = getopt(argc, argv, "o:v")) != -1) {
         switch (flag) {
-        case 'b':
-            base_address = atoi(optarg);
-            break;
         case 'o':
             output_path = optarg;
             break;
@@ -69,12 +64,13 @@ int main(int argc, char *argv[]) {
     }
 
     struct list *groups;
-    enum parser_status parse_status = parser_parse_tokens(tokens, base_address, &groups);
+    enum parser_status parse_status = parser_parse_tokens(tokens, &groups);
     if (parse_status != PARSER_STATUS_SUCCESS) {
         log_fatal("Parser failed, will not proceed with encoding (errno %d)", parse_status);
     }
 
-    enum encoder_status encoder_status = encoder_encode_groups(groups);
+    struct list *bytes;
+    enum encoder_status encoder_status = encoder_encode_groups(groups, &bytes);
     if (encoder_status != ENCODER_STATUS_SUCCESS) {
         log_fatal("Encoder failed, will not proceed with output file writing");
     }
@@ -84,19 +80,11 @@ int main(int argc, char *argv[]) {
         log_fatal("Cannot open output file '%s'", output_path);
     }
 
-    for (uint32_t i = 0; i < groups->size; i++) {
+    for (uint32_t i = 0; i < bytes->size; i++) {
         void *data;
-        list_peek_at(groups, i, &data);
-        struct parser_group *group = (struct parser_group *) data;
-
-        uint8_t bytes[4] = {
-            (group->instruction.binary >>  0) & 0xFF,
-            (group->instruction.binary >>  8) & 0xFF,
-            (group->instruction.binary >> 16) & 0xFF,
-            (group->instruction.binary >> 24) & 0xFF
-        };
-
-        if (fwrite(bytes, sizeof(bytes), 1, out_file) != 1) {
+        list_peek_at(bytes, i, &data);
+        uint8_t *byte = (uint8_t *) data;
+        if (fwrite(byte, sizeof(uint8_t), 1, out_file) != 1) {
             log_fatal("Cannot write to output file '%s'", output_path);
         }
     }
@@ -105,5 +93,6 @@ int main(int argc, char *argv[]) {
     fclose(out_file);
     destroy_list(tokens, &list_default_node_free_callback);
     destroy_list(groups, &list_default_node_free_callback);
+    destroy_list(bytes, &list_default_node_free_callback);
     return 0;
 }
