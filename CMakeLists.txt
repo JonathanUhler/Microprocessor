@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.20)
 
 project(Microprocessor C)
 
-add_compile_options(-std=c2x -Wall -Wextra -Wpedantic -Werror)
+add_compile_options(-std=c2x -Wall -Wextra -Wpedantic -Werror -g)
 
 set(SRC_DIR src)
 set(INCLUDE_DIR include)
@@ -15,13 +15,18 @@ add_library(architecture STATIC
   ${SRC_DIR}/architecture/logger.c
 )
 
+add_library(structures STATIC
+  ${SRC_DIR}/structures/list.c
+)
+
+
 add_executable(assembler
   ${SRC_DIR}/assembler/assembler.c
   ${SRC_DIR}/assembler/lexer.c
   ${SRC_DIR}/assembler/parser.c
   ${SRC_DIR}/assembler/encoder.c
 )
-target_link_libraries(assembler PRIVATE architecture)
+target_link_libraries(assembler PRIVATE architecture structures)
 
 add_executable(simulator
   ${SRC_DIR}/simulator/cli.c

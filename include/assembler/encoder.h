@@ -14,6 +14,7 @@
 
 
 #include "assembler/parser.h"
+#include "structures/list.h"
 #include <stdint.h>
 
 
@@ -40,18 +41,17 @@ enum encoder_status {
  *      .binary member of each node to the encoded binary. The .imm_num member of each parser group
  *      (within a node) may be set during label resolution/encoding.
  *
- * After encoding, the caller is still responsible for using the parser API to free the nodes left
- * in the provided list. The pointer to the head node (*groups) may be changed as label nodes are
- * removed, and may be set to NULL if only label nodes were present.
+ * After encoding, the caller is still responsible for using the list API to free the nodes left
+ * in the provided list.
  *
  * @param groups  List of parser group nodes to encode.
  *
  * @return Whether encoding was successful. If SUCCESS, the encoded binary can be read by traversing
- *         the *groups list and reading the .binary member of each node. On error, the state/order
- *         of nodes in the *groups list is not guaranteed. In either case, the caller is still
- *         responsible for freeing *groups.
+ *         the groups list and reading the .binary member of each instruction node. On error, the
+ *         state/order of nodes in the groups list is not guaranteed. In either case, the caller is
+ *         still responsible for freeing groups with the list API.
  */
-enum encoder_status encoder_encode_groups(struct parser_group_node **groups);
+enum encoder_status encoder_encode_groups(struct list *groups);
 
 
 #endif  // _ASSEMBLER_ENCODER_H_

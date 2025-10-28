@@ -9,6 +9,7 @@
 #define _ASSEMBLER_LEXER_H_
 
 
+#include "structures/list.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
@@ -72,21 +73,25 @@ enum lexer_status {
 
 
 /**
- * Runs the lexer on the provided input file to get the next token.
+ * Runs the lexer on the provided input file to read all tokens into a list in they order they
+ * appear in the file.
  *
- * Lexing will continue at wherever the read pointer is in the file. This function will advance
- * the read pointer of the file while processing characters; if the lexer is called again, the
- * file pointer should not be changed between calls.
+ * Lexing will proceed until the entire file is read (EOF) or an error is encountered. The lexer
+ * does not need to be called as a generator to get further tokens after a successful call.
  *
- * @param[inout] file   The file to read a token from.
- * @param[out]   token  A pointer to store the token information.
+ * @param[inout] file    The file to read tokens from.
+ * @param[out]   tokens  A pointer to return a list of processed tokens. It is the caller's
+ *                       responsibility to free this list with the structures/list API. The tokens
+ *                       list must be freed with the list_default_node_free_callback to free the
+ *                       node data as well.
  *
- * @return The status of the lexer call. If SUCCESS, the lexer can be called again to get another
- *         token. If EOF, the lexer exited normally but should not be called again. Otherwise, the
- *         lexer exited with an error (the line, column, and offending character are stored in the
- *         token pointer).
+ * @return The status of the lexer call. If SUCCESS, the lexer processed all tokens in the file
+ *         and stored them in the list output pointer (in a new list allocated by the lexer). If
+ *         failure, the lexer encountered an error while parsing the file and should not be called
+ *         again. If a non-success status is returned, the caller does not need to free the tokens
+ *         list.
  */
-enum lexer_status lexer_next_token(FILE *file, struct lexer_token *token);
+enum lexer_status lexer_lex_file(FILE *file, struct list **tokens);
 
 
 #endif  // _ASSEMBLER_LEXER_H_
