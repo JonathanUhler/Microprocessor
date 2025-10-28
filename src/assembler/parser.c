@@ -41,6 +41,33 @@ static enum parser_status parser_expect_sequence(struct list *tokens, struct lis
 }
 
 
+static enum parser_status parser_expect_blank_instruction(struct list *tokens)
+{
+    log_debug("Parser checking for blank instruction");
+
+    enum lexer_token_type identifier = LEXER_TOKEN_IDENTIFIER;
+
+    struct list *sequence = create_list();
+    list_add(sequence, &identifier);
+
+    enum parser_status match_status = parser_expect_sequence(tokens, sequence);
+    destroy_list(sequence, NULL);
+    if (match_status != PARSER_STATUS_SUCCESS) {
+        return PARSER_STATUS_SEMANTIC_ERROR;
+    }
+
+    void *data;
+    struct lexer_token *token;
+
+    // Identifier
+    list_pop_front(tokens, &data);
+    token = (struct lexer_token *) data;
+    free(token);
+
+    return PARSER_STATUS_SUCCESS;
+}
+
+
 static enum parser_status parser_expect_i_instruction(struct list *tokens,
                                                       struct parser_group *group)
 {
@@ -382,13 +409,13 @@ static enum parser_status parser_expect_pseudo_instruction(struct list *tokens,
         group->instruction.source2 = ZERO;
     }
     else if (strncmp(token->text, "nop", ISA_OPCODE_SYMBOL_MAX_LENGTH) == 0) {
-        parse_status = PARSER_STATUS_SUCCESS;
+        parse_status = parser_expect_blank_instruction(tokens);
         group->instruction.dest = ZERO;
         group->instruction.source1 = ZERO;
         group->instruction.source2 = ZERO;
     }
     else if (strncmp(token->text, "ret", ISA_OPCODE_SYMBOL_MAX_LENGTH) == 0) {
-        parse_status = PARSER_STATUS_SUCCESS;
+        parse_status = parser_expect_blank_instruction(tokens);
         group->instruction.dest = ZERO;
         group->instruction.source1 = ZERO;
         group->instruction.source2 = RA;
