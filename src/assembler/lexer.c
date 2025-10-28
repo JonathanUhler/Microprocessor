@@ -7,7 +7,10 @@
 
 #include "assembler/lexer.h"
 #include "architecture/isa.h"
+#include "architecture/logger.h"
+#include "structures/list.h"
 #include <ctype.h>
+#include <inttypes.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -200,11 +203,22 @@ static bool lexer_check_identifier(FILE *file, struct lexer_token *token) {
 }
 
 
-enum lexer_status lexer_next_token(FILE *file, struct lexer_token *token) {
-    if (file == NULL || token == NULL) {
-        return LEXER_STATUS_INVALID_ARGUMENT;
-    }
-
+/**
+ * Runs the lexer on the provided input file to get the next token.
+ *
+ * Lexing will continue at wherever the read pointer is in the file. This function will advance
+ * the read pointer of the file while processing characters; if the lexer is called again, the
+ * file pointer should not be changed between calls.
+ *
+ * @param[inout] file   The file to read a token from.
+ * @param[out]   token  A pointer to store the token information.
+ *
+ * @return The status of the lexer call. If SUCCESS, the lexer can be called again to get another
+ *         token. If EOF, the lexer exited normally but should not be called again. Otherwise, the
+ *         lexer exited with an error (the line, column, and offending character are stored in the
+ *         token pointer).
+ */
+static enum lexer_status lexer_next_token(FILE *file, struct lexer_token *token) {
     // At this point we know that the arguments are at least valid and parsing can be attempted.
     // We clear the token parameters and fill them as we encounter tokens.
     token->type = LEXER_TOKEN_EOF;
@@ -216,6 +230,8 @@ enum lexer_status lexer_next_token(FILE *file, struct lexer_token *token) {
     // Skip whitespace from the current file read pointer. If this returns false, that means the
     // end of the file was reached while skipping whitespace. In that case, we reset the global
     // line/column counters (for the next file) and return EOF.
+    log_trace("Lexer checking for whitespace to skip (%" PRIu32 ":%" PRIu32 ")",
+              lexer_current_line, lexer_current_column);
     if (!lexer_skip_whitespace(file)) {
         lexer_current_line = 1;
         lexer_current_column = 0;
@@ -225,6 +241,8 @@ enum lexer_status lexer_next_token(FILE *file, struct lexer_token *token) {
     // Skip comments from the current file pointer. If this returns true, that means a comment
     // was skipped (from the ; symbol to end of line) and so we want to continue to get the next
     // real token on the start of the next line.
+    log_trace("Lexer checking for comments to skip (%" PRIu32 ":%" PRIu32 ")",
+              lexer_current_line, lexer_current_column);
     if (lexer_skip_comments(file)) {
         lexer_current_line++;
         lexer_current_column = 0;
@@ -234,18 +252,24 @@ enum lexer_status lexer_next_token(FILE *file, struct lexer_token *token) {
     // At this point we have reached a real (non-whitespace, non-comment) character to parse.
     // We go through all the token parsers in order trying to find a lexical match.
 
+    log_trace("Lexer checking for punctuation (%" PRIu32 ":%" PRIu32 ")",
+              lexer_current_line, lexer_current_column);
     token->line = lexer_current_line;
     token->column = lexer_current_column;
     if (lexer_check_punctuation(file, token)) {
         return LEXER_STATUS_SUCCESS;
     }
 
+    log_trace("Lexer checking for number (%" PRIu32 ":%" PRIu32 ")",
+              lexer_current_line, lexer_current_column);
     token->line = lexer_current_line;
     token->column = lexer_current_column;
     if (lexer_check_number(file, token)) {
         return LEXER_STATUS_SUCCESS;
     }
 
+    log_trace("Lexer checking for identifier (%" PRIu32 ":%" PRIu32 ")",
+              lexer_current_line, lexer_current_column);
     token->line = lexer_current_line;
     token->column = lexer_current_column;
     if (lexer_check_identifier(file, token)) {
@@ -254,7 +278,37 @@ enum lexer_status lexer_next_token(FILE *file, struct lexer_token *token) {
 
     // At this point all of the parsers have failed. That means we have an unrecognized token
     // and parsing the file cannot continue.
+    log_trace("Lexer did not identify any known token (%" PRIu32 ":%" PRIu32 ")",
+              lexer_current_line, lexer_current_column);
     token->text[0] = fgetc(file);
     token->text[1] = '\0';
     return LEXER_STATUS_LEXICAL_ERROR;
+}
+
+
+enum lexer_status lexer_lex_file(FILE *file, struct list **tokens) {
+    if (file == NULL || tokens == NULL) {
+        return LEXER_STATUS_INVALID_ARGUMENT;
+    }
+
+    *tokens = create_list();
+
+    while (true) {
+        struct lexer_token *token = (struct lexer_token *) calloc(1, sizeof(struct lexer_token));
+        enum lexer_status lex_status = lexer_next_token(file, token);
+        switch (lex_status) {
+        case LEXER_STATUS_SUCCESS:
+            log_debug("Lexer found token of type '%c'", token->type);
+            list_add(*tokens, (void *) token);
+            break;
+        case LEXER_STATUS_EOF:
+            log_info("Lexer reached end-of-file successfully");
+            return LEXER_STATUS_SUCCESS;
+        default:
+            log_error("Lexer could not parse token at line %" PRIu32 ", col %" PRIu32 " (errno %d)",
+                      lexer_current_line, lexer_current_column, lex_status);
+            destroy_list(*tokens, &list_default_node_free_callback);
+            return lex_status;
+        }
+    }
 }
