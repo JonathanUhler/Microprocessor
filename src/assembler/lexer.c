@@ -296,6 +296,7 @@ enum lexer_status lexer_lex_file(FILE *file, struct list **tokens) {
     while (true) {
         struct lexer_token *token = (struct lexer_token *) calloc(1, sizeof(struct lexer_token));
         enum lexer_status lex_status = lexer_next_token(file, token);
+
         switch (lex_status) {
         case LEXER_STATUS_SUCCESS:
             log_debug("Lexer found token of type '%c'", token->type);
@@ -303,11 +304,13 @@ enum lexer_status lexer_lex_file(FILE *file, struct list **tokens) {
             break;
         case LEXER_STATUS_EOF:
             log_info("Lexer reached end-of-file successfully");
+            free(token);
             return LEXER_STATUS_SUCCESS;
         default:
             log_error("Lexer could not parse token at line %" PRIu32 ", col %" PRIu32 " (errno %d)",
                       lexer_current_line, lexer_current_column, lex_status);
             destroy_list(*tokens, &list_default_node_free_callback);
+            free(token);
             return lex_status;
         }
     }

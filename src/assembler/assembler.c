@@ -81,9 +81,6 @@ int main(int argc, char *argv[]) {
 
     FILE *out_file = fopen(output_path, "wb");
     if (out_file == NULL) {
-        fclose(in_file);
-        destroy_list(tokens, &list_default_node_free_callback);
-        destroy_list(groups, &list_default_node_free_callback);
         log_fatal("cannot open output file '%s'", output_path);
     }
 
@@ -100,10 +97,6 @@ int main(int argc, char *argv[]) {
         };
 
         if (fwrite(bytes, sizeof(bytes), 1, out_file) != 1) {
-            fclose(in_file);
-            fclose(out_file);
-            destroy_list(tokens, &list_default_node_free_callback);
-            destroy_list(groups, &list_default_node_free_callback);
             log_fatal("cannot write to output file '%s'", output_path);
         }
     }

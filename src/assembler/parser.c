@@ -71,6 +71,7 @@ static enum parser_status parser_expect_i_instruction(struct list *tokens,
     // Identifier
     list_pop_front(tokens, &data);
     token = (struct lexer_token *) data;
+    free(token);
     // Identifier or number
     list_pop_front(tokens, &data);
     token = (struct lexer_token *) data;
@@ -81,6 +82,7 @@ static enum parser_status parser_expect_i_instruction(struct list *tokens,
     else {
         group->instruction.immediate = token->value;
     }
+    free(token);
 
     return PARSER_STATUS_SUCCESS;
 }
@@ -122,13 +124,16 @@ static enum parser_status parser_expect_di_instruction(struct list *tokens,
     // Identifier
     list_pop_front(tokens, &data);
     token = (struct lexer_token *) data;
+    free(token);
     // Destination
     list_pop_front(tokens, &data);
     token = (struct lexer_token *) data;
     group->instruction.dest = token->value;
+    free(token);
     // Comma
     list_pop_front(tokens, &data);
     token = (struct lexer_token *) data;
+    free(token);
     // Identifier or number
     list_pop_front(tokens, &data);
     token = (struct lexer_token *) data;
@@ -139,6 +144,7 @@ static enum parser_status parser_expect_di_instruction(struct list *tokens,
     else {
         group->instruction.immediate = token->value;
     }
+    free(token);
 
     return PARSER_STATUS_SUCCESS;
 }
@@ -172,17 +178,21 @@ static enum parser_status parser_expect_ds_instruction(struct list *tokens,
     // Identifier
     list_pop_front(tokens, &data);
     token = (struct lexer_token *) data;
+    free(token);
     // Destination
     list_pop_front(tokens, &data);
     token = (struct lexer_token *) data;
     group->instruction.dest = token->value;
+    free(token);
     // Comma
     list_pop_front(tokens, &data);
     token = (struct lexer_token *) data;
+    free(token);
     // Source
     list_pop_front(tokens, &data);
     token = (struct lexer_token *) data;
     group->instruction.source1 = token->value;
+    free(token);
 
     return PARSER_STATUS_SUCCESS;
 }
@@ -229,20 +239,25 @@ static enum parser_status parser_expect_dsi_instruction(struct list *tokens,
     // Identifier
     list_pop_front(tokens, &data);
     token = (struct lexer_token *) data;
+    free(token);
     // Destination
     list_pop_front(tokens, &data);
     token = (struct lexer_token *) data;
     group->instruction.dest = token->value;
+    free(token);
     // Comma
     list_pop_front(tokens, &data);
     token = (struct lexer_token *) data;
+    free(token);
     // Destination
     list_pop_front(tokens, &data);
     token = (struct lexer_token *) data;
     group->instruction.source1 = token->value;
+    free(token);
     // Comma
     list_pop_front(tokens, &data);
     token = (struct lexer_token *) data;
+    free(token);
     // Identifier or number
     list_pop_front(tokens, &data);
     token = (struct lexer_token *) data;
@@ -253,6 +268,7 @@ static enum parser_status parser_expect_dsi_instruction(struct list *tokens,
     else {
         group->instruction.immediate = token->value;
     }
+    free(token);
 
     return PARSER_STATUS_SUCCESS;
 
@@ -289,24 +305,30 @@ static enum parser_status parser_expect_dss_instruction(struct list *tokens,
     // Identifier
     list_pop_front(tokens, &data);
     token = (struct lexer_token *) data;
+    free(token);
     // Destination
     list_pop_front(tokens, &data);
     token = (struct lexer_token *) data;
     group->instruction.dest = token->value;
+    free(token);
     // Comma
     list_pop_front(tokens, &data);
     token = (struct lexer_token *) data;
+    free(token);
     // Source
     list_pop_front(tokens, &data);
     token = (struct lexer_token *) data;
     group->instruction.source1 = token->value;
+    free(token);
     // Comma
     list_pop_front(tokens, &data);
     token = (struct lexer_token *) data;
+    free(token);
     // Source
     list_pop_front(tokens, &data);
     token = (struct lexer_token *) data;
     group->instruction.source2 = token->value;
+    free(token);
 
     return PARSER_STATUS_SUCCESS;
 }
@@ -441,10 +463,11 @@ static enum parser_status parser_expect_label(struct list *tokens, struct parser
     memcpy(group->label.label, token->text, LEXER_TOKEN_MAX_LENGTH);
     group->label.label[LEXER_TOKEN_MAX_LENGTH] = '\0';
     group->label.immediate = parser_pc;
-
+    free(token);
     // Colon
     list_pop_front(tokens, &data);
     token = (struct lexer_token *) data;
+    free(token);
 
     return PARSER_STATUS_SUCCESS;
 }
@@ -496,10 +519,12 @@ enum parser_status parser_parse_tokens(struct list *tokens,
             break;
         case PARSER_STATUS_EOF:
             log_info("Parser reached end-of-file successfully");
+            free(group);
             return PARSER_STATUS_SUCCESS;
         default:
             log_error("Parser could not parse tokens (errno %d)", parse_status);
             destroy_list(*groups, &list_default_node_free_callback);
+            free(group);
             return parse_status;
         }
     }
