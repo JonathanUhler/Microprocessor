@@ -111,7 +111,6 @@ enum parser_status {
  * successful call.
  *
  * @param tokens[inout]  The list of tokens to parse. Tokens will be popped from this list.
- * @param base_address   The base address for the generated code, used during label resolution.
  * @param groups[out]    A pointer to return a list of processed semantic groups. It is the caller's
  *                       responsibility to free this list with the structures/list API. The groups
  *                       must be freed with the list_default_node_free_callback to free the node
@@ -123,9 +122,7 @@ enum parser_status {
  *         the same token list. If a non-success status is returned, the caller does not need to
  *         free the groups list.
  */
-enum parser_status parser_parse_tokens(struct list *tokens,
-                                       uint16_t base_address,
-                                       struct list **groups);
+enum parser_status parser_parse_tokens(struct list *tokens, struct list **groups);
 
 
 #endif  // _ASSEMBLER_PARSER_H_

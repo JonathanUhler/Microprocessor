@@ -24,8 +24,6 @@ static uint32_t lexer_current_line = 1;
 static uint32_t lexer_current_column = 0;
 
 
-
-
 /**
  * Skips all whitespace in the specified file starting at the current read pointer.
  *

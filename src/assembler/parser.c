@@ -600,9 +600,9 @@ static enum parser_status parser_expect_directive(struct list *tokens, struct pa
         return PARSER_STATUS_SEMANTIC_ERROR;
     }
 
-    list_status = list_peek_at(tokens, 0, &data);
+    list_status = list_peek_at(tokens, 1, &data);
     token = (struct lexer_token *) data;
-    if (list_status != LIST_STATUS_SUCCESS || token->type != LEXER_TOKEN_PERIOD) {
+    if (list_status != LIST_STATUS_SUCCESS || token->type != LEXER_TOKEN_IDENTIFIER) {
         return PARSER_STATUS_SEMANTIC_ERROR;
     }
 
@@ -640,6 +640,9 @@ static enum parser_status parser_next_group(struct list *tokens,
     }
     else if (parser_expect_directive(tokens, group) == PARSER_STATUS_SUCCESS) {
         log_debug("Parser found a directive");
+        if (group->directive.type == PARSER_DIRECTIVE_HALF) {
+            parser_pc += sizeof(uint16_t);
+        }
         return PARSER_STATUS_SUCCESS;
     }
     else {
@@ -649,15 +652,12 @@ static enum parser_status parser_next_group(struct list *tokens,
 }
 
 
-enum parser_status parser_parse_tokens(struct list *tokens,
-                                       uint16_t base_address,
-                                       struct list **groups)
-{
+enum parser_status parser_parse_tokens(struct list *tokens, struct list **groups) {
     if (tokens == NULL || groups == NULL) {
         return PARSER_STATUS_INVALID_ARGUMENT;
     }
 
-    parser_pc = base_address;
+    parser_pc = 0x0000;
     *groups = create_list();
 
     uint32_t num_groups = 0;
