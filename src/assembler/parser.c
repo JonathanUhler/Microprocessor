@@ -508,11 +508,12 @@ static enum parser_status parser_next_group(struct list *tokens,
     }
 
     if (parser_expect_label(tokens, group) == PARSER_STATUS_SUCCESS) {
-        log_debug("Parser found a label '%s'", group->label.label);
+        log_debug("Parser found a label '%s' at 0x%04" PRIx16, group->label.label, parser_pc);
         return PARSER_STATUS_SUCCESS;
     }
     else if (parser_expect_instruction(tokens, group) == PARSER_STATUS_SUCCESS) {
         log_debug("Parser found an instruction");
+        parser_pc += sizeof(uint32_t);
         return PARSER_STATUS_SUCCESS;
     }
     else {

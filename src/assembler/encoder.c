@@ -3,6 +3,7 @@
 #include "architecture/isa.h"
 #include "architecture/logger.h"
 #include "structures/list.h"
+#include <inttypes.h>
 #include <stdint.h>
 
 
@@ -14,11 +15,13 @@ static enum encoder_status encoder_resolve_labels(struct list *groups) {
         list_peek_at(groups, i, &data);
         struct parser_group *group = (struct parser_group *) data;
         if (group->type == PARSER_GROUP_LABEL) {
+            log_trace("Encoder registered a new label '%s'", group->label.label);
             list_pop_at(groups, i, &data);
             i--;
             list_add(labels, data);
         }
     }
+    log_debug("Encoder registered %" PRIu32 " labels", labels->size);
 
     for (uint32_t i = 0; i < groups->size; i++) {
         void *data;
@@ -28,18 +31,20 @@ static enum encoder_status encoder_resolve_labels(struct list *groups) {
         uint32_t l;
         for (l = 0; l < labels->size; l++) {
             void *label_data;
-            list_peek_at(labels, i, &label_data);
+            list_peek_at(labels, l, &label_data);
             struct parser_group *label = (struct parser_group *) label_data;
 
             if (strncmp(label->label.label, group->instruction.label, LEXER_TOKEN_MAX_LENGTH) == 0)
             {
                 group->instruction.immediate = label->label.immediate;
+                log_trace("Encoder resolved label '%s' to 0x%04" PRIx16,
+                          group->instruction.label, group->instruction.immediate);
                 break;
             }
         }
 
         if (l >= groups->size) {
-            log_error("use of undeclared label '%s'", group->instruction.label);
+            log_error("Use of undeclared label '%s'", group->instruction.label);
             return ENCODER_STATUS_UNKNOWN_LABEL;
         }
     }
