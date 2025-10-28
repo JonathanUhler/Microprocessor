@@ -11,9 +11,11 @@
 
 
 static uint32_t parser_pc = 0;
+static struct lexer_token *parser_last_token = NULL;
 
 
-static enum parser_status parser_expect_sequence(struct list *tokens, struct list *sequence) {
+static enum parser_status parser_expect_sequence(struct list *tokens,
+                                                 struct list *sequence) {
     for (uint32_t i = 0; i < sequence->size; i++) {
         void *token_data;
         void *type_data;
@@ -32,6 +34,7 @@ static enum parser_status parser_expect_sequence(struct list *tokens, struct lis
         struct lexer_token *token = (struct lexer_token *) token_data;
         enum lexer_token_type *type = (enum lexer_token_type *) type_data;
         log_trace("Parser checking sequence[%" PRIu32 "] = '%c' vs '%c'", i, *type, token->type);
+        parser_last_token = token;
         if (token->type != *type) {
             return PARSER_STATUS_SEMANTIC_ERROR;
         }
@@ -550,7 +553,10 @@ enum parser_status parser_parse_tokens(struct list *tokens,
             free(group);
             return PARSER_STATUS_SUCCESS;
         default:
-            log_error("Parser could not parse tokens (errno %d)", parse_status);
+            log_error("%" PRIu32 ":%" PRIu32 ": Parser could not parse token (errno %d)",
+                      parser_last_token != NULL ? parser_last_token->line : 0,
+                      parser_last_token != NULL ? parser_last_token->column : 0,
+                      parse_status);
             destroy_list(*groups, &list_default_node_free_callback);
             free(group);
             return parse_status;

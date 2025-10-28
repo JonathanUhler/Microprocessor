@@ -59,29 +59,29 @@ int main(int argc, char *argv[]) {
 
     FILE *in_file = fopen(input_path, "r");
     if (in_file == NULL) {
-        log_fatal("cannot open input file '%s'", input_path);
+        log_fatal("Cannot open input file '%s'", input_path);
     }
 
     struct list *tokens;
     enum lexer_status lex_status = lexer_lex_file(in_file, &tokens);
     if (lex_status != LEXER_STATUS_SUCCESS) {
-        log_fatal("lexer failed, will not proceed with parsing (errno %d)", lex_status);
+        log_fatal("Lexer failed, will not proceed with parsing (errno %d)", lex_status);
     }
 
     struct list *groups;
     enum parser_status parse_status = parser_parse_tokens(tokens, base_address, &groups);
     if (parse_status != PARSER_STATUS_SUCCESS) {
-        log_fatal("parser failed, will not proceed with encoding (errno %d)", parse_status);
+        log_fatal("Parser failed, will not proceed with encoding (errno %d)", parse_status);
     }
 
     enum encoder_status encoder_status = encoder_encode_groups(groups);
     if (encoder_status != ENCODER_STATUS_SUCCESS) {
-        log_fatal("encoder failed, will not proceed with output file writing");
+        log_fatal("Encoder failed, will not proceed with output file writing");
     }
 
     FILE *out_file = fopen(output_path, "wb");
     if (out_file == NULL) {
-        log_fatal("cannot open output file '%s'", output_path);
+        log_fatal("Cannot open output file '%s'", output_path);
     }
 
     for (uint32_t i = 0; i < groups->size; i++) {
@@ -97,7 +97,7 @@ int main(int argc, char *argv[]) {
         };
 
         if (fwrite(bytes, sizeof(bytes), 1, out_file) != 1) {
-            log_fatal("cannot write to output file '%s'", output_path);
+            log_fatal("Cannot write to output file '%s'", output_path);
         }
     }
 
