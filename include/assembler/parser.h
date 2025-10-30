@@ -31,43 +31,77 @@ enum parser_group_type {
 };
 
 
+/**
+ * Semantic group for an instruction.
+ */
 struct parser_group_instruction {
+    /** Opcode of the instruction. */
     enum isa_opcode opcode;
+    /** Destination register. */
     enum isa_register dest;
+    /** Source1 register. */
     enum isa_register source1;
+    /** Source2 register. */
     enum isa_register source2;
+    /** Text of label used in the instruction. */
     char label[LEXER_TOKEN_MAX_LENGTH + 1];
+    /** Numeric immediate value used in the instruction. */
     uint16_t immediate;
+    /** Binary value of the instruction, set by the encoder. */
     uint32_t binary;
 };
 
 
+/**
+ * Semantic group for a label.
+ */
 struct parser_group_label {
+    /** Text of the label. */
     char label[LEXER_TOKEN_MAX_LENGTH + 1];
+    /** Numeric immediate value of the label. */
     uint32_t immediate;
 };
 
 
+/**
+ * Types of directives recognized by the parser.
+ */
 enum parser_directive_type {
+    /** .loc directive to set parser pc location. */
     PARSER_DIRECTIVE_LOC,
+    /** .half directive to store a halfword. */
     PARSER_DIRECTIVE_HALF
 };
 
 
+/**
+ * Semantic group for a location directive.
+ */
 struct parser_directive_loc {
+    /** The number of pad bytes needed to reach the .loc location. */
     uint16_t num_pad_bytes;
 };
 
 
+/**
+ * Semantic group for a half directive.
+ */
 struct parser_directive_half {
+    /** The value of the halfword. */
     uint16_t element;
 };
 
 
+/**
+ * Semantic group for any type of directive.
+ */
 struct parser_group_directive {
+    /** The type of the directive. */
     enum parser_directive_type type;
     union {
+        /** .loc view of the directive group. */
         struct parser_directive_loc loc;
+        /** .half view of the directive group. */
         struct parser_directive_half half;
     };
 };
@@ -80,8 +114,11 @@ struct parser_group {
     /** The type of the group, used to determine which other members are usable. */
     enum parser_group_type type;
     union {
+        /** Instruction view of the semantic group. */
         struct parser_group_instruction instruction;
+        /** Label view of the semantic group. */
         struct parser_group_label label;
+        /** Directive view of the semantic group. */
         struct parser_group_directive directive;
     };
 };
