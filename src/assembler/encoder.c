@@ -28,6 +28,9 @@ static enum encoder_status encoder_resolve_labels(struct list *groups) {
         void *data;
         list_peek_at(groups, i, &data);
         struct parser_group *group = (struct parser_group *) data;
+        if (strlen(group->instruction.label) == 0) {
+            continue;
+        }
 
         uint32_t l;
         for (l = 0; l < labels->size; l++) {
@@ -44,7 +47,7 @@ static enum encoder_status encoder_resolve_labels(struct list *groups) {
             }
         }
 
-        if (l >= groups->size) {
+        if (l >= labels->size) {
             log_error("Use of undeclared label '%s'", group->instruction.label);
             return ENCODER_STATUS_UNKNOWN_LABEL;
         }
