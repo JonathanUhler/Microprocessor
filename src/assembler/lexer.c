@@ -93,7 +93,7 @@ static bool lexer_check_punctuation(FILE *file, struct lexer_token *token) {
     case LEXER_TOKEN_PERIOD:
         token->type = c;
         token->text[0] = c;
-        token->text[1] = '\n';
+        token->text[1] = '\0';
         lexer_current_column++;
         return true;
     default:
@@ -106,13 +106,47 @@ static bool lexer_check_punctuation(FILE *file, struct lexer_token *token) {
 
 
 /**
+ * Checks for a doble-quoted string and stores the content (without quotes) in the token.
+ *
+ * @param[inout] file   The file to parse from.
+ * @param[out]   token  A pointer to store token information.
+ *
+ * @return Whether a string was found.
+ */
+static bool lexer_check_string(FILE *file, struct lexer_token *token) {
+    int c = fgetc(file);
+    if (c != '"') {
+        ungetc(c, file);
+        return false;
+    }
+
+    uint32_t i = 0;
+    while (true) {
+        c = fgetc(file);
+        if (c == '"') {
+            break;
+        }
+        else if (c == EOF || c == '\n') {
+            return false;
+        }
+        else if (i < LEXER_TOKEN_MAX_LENGTH) {
+            token->text[i++] = (char) c;
+            lexer_current_column++;
+        }
+    }
+    token->text[i] = '\0';
+    token->type = LEXER_TOKEN_STRING;
+    return true;
+}
+
+
+/**
  * Checks whether the read pointer in the specified file is currently pointing at a number token,
  * and parses that token if possible.
  *
  * @param[inout] file   The file to parse from.
  * @param[out]   token  A pointer to store token information.
  *
- * @return Whether a number token was parsed from the file.
  */
 static bool lexer_check_number(FILE *file, struct lexer_token *token) {
     // If the first character we read isn't a digit (any digit for decimal, and '0' for the '0x' in
@@ -231,8 +265,6 @@ static enum lexer_status lexer_next_token(FILE *file, struct lexer_token *token)
     log_trace("Lexer checking for whitespace to skip (%" PRIu32 ":%" PRIu32 ")",
               lexer_current_line, lexer_current_column);
     if (!lexer_skip_whitespace(file)) {
-        lexer_current_line = 1;
-        lexer_current_column = 0;
         return LEXER_STATUS_EOF;
     }
 
@@ -255,6 +287,14 @@ static enum lexer_status lexer_next_token(FILE *file, struct lexer_token *token)
     token->line = lexer_current_line;
     token->column = lexer_current_column;
     if (lexer_check_punctuation(file, token)) {
+        return LEXER_STATUS_SUCCESS;
+    }
+
+    log_trace("Lexer checking for string (%" PRIu32 ":%" PRIu32 ")",
+              lexer_current_line, lexer_current_column);
+    token->line = lexer_current_line;
+    token->column = lexer_current_column;
+    if (lexer_check_string(file, token)) {
         return LEXER_STATUS_SUCCESS;
     }
 
@@ -284,15 +324,24 @@ static enum lexer_status lexer_next_token(FILE *file, struct lexer_token *token)
 }
 
 
-enum lexer_status lexer_lex_file(FILE *file, struct list **tokens) {
-    if (file == NULL || tokens == NULL) {
+enum lexer_status lexer_lex_file(const char *file_name, struct list **tokens) {
+    if (file_name == NULL || tokens == NULL) {
         return LEXER_STATUS_INVALID_ARGUMENT;
     }
 
+    FILE *file = fopen(file_name, "r");
+    if (file == NULL) {
+        log_error("Lexer cannot open file '%s'", file_name);
+        return LEXER_STATUS_INVALID_ARGUMENT;
+    }
+
+    lexer_current_line = 1;
+    lexer_current_column = 0;
     *tokens = create_list();
 
     while (true) {
         struct lexer_token *token = (struct lexer_token *) calloc(1, sizeof(struct lexer_token));
+        token->file = file_name;
         enum lexer_status lex_status = lexer_next_token(file, token);
 
         switch (lex_status) {
@@ -303,12 +352,14 @@ enum lexer_status lexer_lex_file(FILE *file, struct list **tokens) {
         case LEXER_STATUS_EOF:
             log_info("Lexer finished successfully (tokens found: %" PRIu32 ")", (*tokens)->size);
             free(token);
+            fclose(file);
             return LEXER_STATUS_SUCCESS;
         default:
-            log_error("Lexer could not parse token at line %" PRIu32 ", col %" PRIu32 " (errno %d)",
-                      lexer_current_line, lexer_current_column, lex_status);
+            log_error("%s (%" PRIu32 ":%" PRIu32 "): Lexer could not parse token (errno %d)",
+                      file_name, lexer_current_line, lexer_current_column, lex_status);
             destroy_list(*tokens, &list_default_node_free_callback);
-             free(token);
+            free(token);
+            fclose(file);
             return lex_status;
         }
     }

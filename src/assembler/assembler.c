@@ -52,13 +52,8 @@ int main(int argc, char *argv[]) {
     }
     input_path = argv[optind];
 
-    FILE *in_file = fopen(input_path, "r");
-    if (in_file == NULL) {
-        log_fatal("Cannot open input file '%s'", input_path);
-    }
-
     struct list *tokens;
-    enum lexer_status lex_status = lexer_lex_file(in_file, &tokens);
+    enum lexer_status lex_status = lexer_lex_file(input_path, &tokens);
     if (lex_status != LEXER_STATUS_SUCCESS) {
         log_fatal("Lexer failed, will not proceed with parsing (errno %d)", lex_status);
     }
@@ -89,7 +84,6 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    fclose(in_file);
     fclose(out_file);
     destroy_list(tokens, &list_default_node_free_callback);
     destroy_list(groups, &list_default_node_free_callback);

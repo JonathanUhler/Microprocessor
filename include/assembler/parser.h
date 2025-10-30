@@ -70,7 +70,9 @@ enum parser_directive_type {
     /** .loc directive to set parser pc location. */
     PARSER_DIRECTIVE_LOC,
     /** .half directive to store a halfword. */
-    PARSER_DIRECTIVE_HALF
+    PARSER_DIRECTIVE_HALF,
+    /** .include directive handled at parse-time (not emitted to groups). */
+    PARSER_DIRECTIVE_INCLUDE
 };
 
 
@@ -93,6 +95,18 @@ struct parser_directive_half {
 
 
 /**
+ * Semantic group for an include directive (parser-level).
+ *
+ * This is used internally in the parser; include directives are expanded into tokens and do not
+ * become semantic groups in the output list.
+ */
+struct parser_directive_include {
+    /** Path to the file to be included (null-terminated). */
+    char path[LEXER_TOKEN_MAX_LENGTH + 1];
+};
+
+
+/**
  * Semantic group for any type of directive.
  */
 struct parser_group_directive {
@@ -103,6 +117,8 @@ struct parser_group_directive {
         struct parser_directive_loc loc;
         /** .half view of the directive group. */
         struct parser_directive_half half;
+        /** .include view of the directive group. */
+        struct parser_directive_include include;
     };
 };
 
@@ -131,7 +147,7 @@ enum parser_status {
     /** The parser operation was successful. */
     PARSER_STATUS_SUCCESS = 0,
     /** The parser reached the end of the file. */
-    PARSER_STATUS_EOF     = 1,
+    PARSER_STATUS_EOF,
     /** The parser API function was called with an invalid argument. */
     PARSER_STATUS_INVALID_ARGUMENT,
     /** The parser encountered a semantic error during parsing. */

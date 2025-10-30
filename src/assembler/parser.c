@@ -14,8 +14,7 @@ static uint32_t parser_pc = 0;
 static struct lexer_token *parser_last_token = NULL;
 
 
-static enum parser_status parser_expect_sequence(struct list *tokens,
-                                                 struct list *sequence) {
+static enum parser_status parser_expect_sequence(struct list *tokens, struct list *sequence) {
     for (uint32_t i = 0; i < sequence->size; i++) {
         void *token_data;
         void *type_data;
@@ -44,8 +43,7 @@ static enum parser_status parser_expect_sequence(struct list *tokens,
 }
 
 
-static enum parser_status parser_expect_blank_instruction(struct list *tokens)
-{
+static enum parser_status parser_expect_blank_instruction(struct list *tokens) {
     log_debug("Parser checking for blank instruction");
 
     enum lexer_token_type identifier = LEXER_TOKEN_IDENTIFIER;
@@ -247,12 +245,12 @@ static enum parser_status parser_expect_dsi_instruction(struct list *tokens,
     list_add(label_sequence, &comma);
     list_add(label_sequence, &identifier);
     struct list *const_sequence = create_list();
-    list_add(label_sequence, &identifier);
-    list_add(label_sequence, &destination);
-    list_add(label_sequence, &comma);
-    list_add(label_sequence, &source);
-    list_add(label_sequence, &comma);
-    list_add(label_sequence, &number);
+    list_add(const_sequence, &identifier);
+    list_add(const_sequence, &destination);
+    list_add(const_sequence, &comma);
+    list_add(const_sequence, &source);
+    list_add(const_sequence, &comma);
+    list_add(const_sequence, &number);
 
     enum parser_status label_match_status = parser_expect_sequence(tokens, label_sequence);
     enum parser_status const_match_status = parser_expect_sequence(tokens, const_sequence);
@@ -463,7 +461,6 @@ static enum parser_status parser_expect_instruction(struct list *tokens, struct 
     }
 }
 
-
 static enum parser_status parser_expect_label(struct list *tokens, struct parser_group *group) {
     log_debug("Parser checking for label");
     group->type = PARSER_GROUP_LABEL;
@@ -586,6 +583,65 @@ static enum parser_status parser_expect_half_directive(struct list *tokens,
 }
 
 
+static enum parser_status parser_expect_include_directive(struct list *tokens) {
+    log_debug("Parser checking for .include directive");
+
+    enum lexer_token_type period = LEXER_TOKEN_PERIOD;
+    enum lexer_token_type identifier = LEXER_TOKEN_IDENTIFIER;
+    enum lexer_token_type string = LEXER_TOKEN_STRING;
+
+    struct list *sequence = create_list();
+    list_add(sequence, &period);
+    list_add(sequence, &identifier);
+    list_add(sequence, &string);
+
+    enum parser_status match_status = parser_expect_sequence(tokens, sequence);
+    destroy_list(sequence, NULL);
+    if (match_status != PARSER_STATUS_SUCCESS) {
+        return PARSER_STATUS_SEMANTIC_ERROR;
+    }
+
+    void *data;
+    struct lexer_token *token;
+
+    // Period
+    list_pop_front(tokens, &data);
+    token = (struct lexer_token *) data;
+    free(token);
+    // Identifier
+    list_pop_front(tokens, &data);
+    token = (struct lexer_token *) data;
+    free(token);
+    // String
+    list_pop_front(tokens, &data);
+    token = (struct lexer_token *) data;
+    char include_path[LEXER_TOKEN_MAX_LENGTH + 1];
+    strncpy(include_path, token->text, LEXER_TOKEN_MAX_LENGTH - 1);
+    include_path[LEXER_TOKEN_MAX_LENGTH] = '\0';
+    free(token);
+
+    struct list *include_tokens;
+    enum lexer_status include_status = lexer_lex_file(include_path, &include_tokens);
+    if (include_status != LEXER_STATUS_SUCCESS) {
+        log_error("Lexer failed to process included file '%s' (errno %d)",
+                  include_path, include_status);
+        return PARSER_STATUS_SEMANTIC_ERROR;
+    }
+
+    uint32_t tokens_added = 0;
+    while (include_tokens->size > 0) {
+        void *include_token;
+        list_pop_front(include_tokens, &include_token);
+        list_add_at(tokens, tokens_added++, include_token);
+    }
+    destroy_list(include_tokens, NULL);
+
+    log_debug("Parser expanded include '%s' (added %" PRIu32 " tokens)",
+              include_path, tokens_added);
+    return PARSER_STATUS_SUCCESS;
+}
+
+
 static enum parser_status parser_expect_directive(struct list *tokens, struct parser_group *group) {
     log_debug("Parser checking for directive");
     group->type = PARSER_GROUP_DIRECTIVE;
@@ -615,6 +671,10 @@ static enum parser_status parser_expect_directive(struct list *tokens, struct pa
         group->directive.type = PARSER_DIRECTIVE_HALF;
         parse_status = parser_expect_half_directive(tokens, group);
     }
+    else if (strncmp(token->text, "include", LEXER_TOKEN_MAX_LENGTH) == 0) {
+        group->directive.type = PARSER_DIRECTIVE_INCLUDE;
+        parse_status = parser_expect_include_directive(tokens);
+    }
     else {
         return PARSER_STATUS_SEMANTIC_ERROR;
     }
@@ -622,9 +682,7 @@ static enum parser_status parser_expect_directive(struct list *tokens, struct pa
 }
 
 
-static enum parser_status parser_next_group(struct list *tokens,
-                                            struct parser_group *group)
-{
+static enum parser_status parser_next_group(struct list *tokens, struct parser_group *group) {
     if (tokens->size == 0) {
         return PARSER_STATUS_EOF;
     }
@@ -640,8 +698,14 @@ static enum parser_status parser_next_group(struct list *tokens,
     }
     else if (parser_expect_directive(tokens, group) == PARSER_STATUS_SUCCESS) {
         log_debug("Parser found a directive");
-        if (group->directive.type == PARSER_DIRECTIVE_HALF) {
+        switch (group->directive.type) {
+        case PARSER_DIRECTIVE_HALF:
             parser_pc += sizeof(uint16_t);
+            break;
+        case PARSER_DIRECTIVE_INCLUDE:
+            return parser_next_group(tokens, group);  // Include processed, emit next real group
+        default:
+            break;  // No special operations for other directive types
         }
         return PARSER_STATUS_SUCCESS;
     }
@@ -676,7 +740,8 @@ enum parser_status parser_parse_tokens(struct list *tokens, struct list **groups
             free(group);
             return PARSER_STATUS_SUCCESS;
         default:
-            log_error("%" PRIu32 ":%" PRIu32 ": Parser could not parse token (errno %d)",
+            log_error("%s (%" PRIu32 ":%" PRIu32 "): Parser could not parse token (errno %d)",
+                      parser_last_token != NULL ? parser_last_token->file : "nil",
                       parser_last_token != NULL ? parser_last_token->line : 0,
                       parser_last_token != NULL ? parser_last_token->column : 0,
                       parse_status);

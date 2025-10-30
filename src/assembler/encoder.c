@@ -137,6 +137,10 @@ static void encoder_convert_directive(struct list *bytes, struct parser_group *d
             list_add(bytes, (void *) byte);
         }
         break;
+    default:
+        log_fatal("Encoder found unexpected directive for conversion (type %d)",
+                  directive->directive.type);
+        return;
     }
 }
 
