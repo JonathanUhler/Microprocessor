@@ -7,11 +7,12 @@
 #include <string.h>
 
 
-static void cli_process_help(struct processor *processor, int argc, char **argv);
 static void cli_process_continue(struct processor *processor, int argc, char **argv);
+static void cli_process_finish(struct processor *processor, int argc, char **argv);
+static void cli_process_help(struct processor *processor, int argc, char **argv);
 static void cli_process_load(struct processor *processor, int argc, char **argv);
-static void cli_process_quit(struct processor *processor, int argc, char **argv);
 static void cli_process_memory(struct processor *processor, int argc, char **argv);
+static void cli_process_quit(struct processor *processor, int argc, char **argv);
 static void cli_process_registers(struct processor *processor, int argc, char **argv);
 static void cli_process_start(struct processor *processor, int argc, char **argv);
 static void cli_process_tick(struct processor *processor, int argc, char **argv);
@@ -19,17 +20,82 @@ static void cli_process_verbose(struct processor *processor, int argc, char **ar
 
 
 static const struct cli_command_descriptor cli_command_table[] = {
-    {"help", cli_process_help, NULL, "print command help information"},
     {"continue", cli_process_continue, NULL,
      "continue until reset is asserted or an error occurs"},
+    {"finish", cli_process_finish, NULL,
+     "continue until a return (jlr0 r0, r0, ra) instruction is executed"},
+    {"help", cli_process_help, NULL, "print command help information"},
     {"load", cli_process_load, "<file> <address>", "load contents of binary file at address"},
-    {"quit", cli_process_quit, NULL, "exit the simulator"},
     {"memory", cli_process_memory, "[[start:]end ...]", "show contents of main memory"},
+    {"quit", cli_process_quit, NULL, "exit the simulator"},
     {"registers", cli_process_registers, "[name ...]", "show contents of registers"},
     {"start", cli_process_start, NULL, "assert and deassert reset to cycle the simulated core"},
     {"tick", cli_process_tick, "[cycles]", "tick the clock by specified amount"},
     {"verbose", cli_process_verbose, "[level]", "set or view level of debug messages"}
 };
+
+
+static void cli_process_continue(struct processor *processor, int argc, char **argv) {
+    (void) argv;
+
+    if (argc != 0) {
+        log_error("Unexpected arguments");
+        return;
+    }
+
+    if (processor->registers->reset == 0x001) {
+        log_warn("Reset is asserted, not ticking clock");
+        return;
+    }
+
+    uint32_t cycles = 0;
+    while (processor->registers->reset == 0x0000) {
+        enum processor_status tick_status = processor_tick(processor, NULL);
+        if (tick_status != PROCESSOR_STATUS_SUCCESS) {
+            log_warn("Execution stopped after %" PRIu32 " cycles (errno %d)", cycles, tick_status);
+            return;
+        }
+        cycles++;
+    }
+}
+
+
+static void cli_process_finish(struct processor *processor, int argc, char **argv) {
+    (void) argv;
+
+    if (argc != 0) {
+        log_error("Unexpected arguments");
+        return;
+    }
+
+    if (processor->registers->reset == 0x001) {
+        log_warn("Reset is asserted, not ticking clock");
+        return;
+    }
+
+    uint32_t cycles = 0;
+    while (processor->registers->reset == 0x0000) {
+        union isa_instruction executed;
+        enum processor_status tick_status = processor_tick(processor, &executed);
+        if (tick_status != PROCESSOR_STATUS_SUCCESS) {
+            log_warn("Execution stopped after %" PRIu32 " cycles (errno %d)", cycles, tick_status);
+            return;
+        }
+        if (executed.dss_type.format == ISA_OPCODE_FORMAT_DSS &&
+            executed.dss_type.funct == (JLR0 >> ISA_INSTRUCTION_FORMAT_SIZE) &&
+            executed.dss_type.dest == ZERO &&
+            executed.dss_type.source1 == ZERO &&
+            executed.dss_type.source2 == RA)
+        {
+            log_debug("Executed ret instruction after %" PRIu32 " cycles", cycles);
+            log_debug("Returned to 0x%04" PRIx16 " with value 0x%04" PRIx16,
+                      registers_read(processor->registers, RA),
+                      registers_read(processor->registers, A0));
+            return;
+        }
+        cycles++;
+    }
+}
 
 
 static void cli_process_help(struct processor *processor, int argc, char **argv) {
@@ -49,31 +115,6 @@ static void cli_process_help(struct processor *processor, int argc, char **argv)
 }
 
 
-static void cli_process_continue(struct processor *processor, int argc, char **argv) {
-    (void) argv;
-
-    if (argc != 0) {
-        log_error("Unexpected arguments");
-        return;
-    }
-
-    if (processor->registers->reset == 0x001) {
-        log_warn("Reset is asserted, not ticking clock");
-        return;
-    }
-
-    uint32_t cycles = 0;
-    while (processor->registers->reset == 0x0000) {
-        enum processor_status tick_status = processor_tick(processor);
-        if (tick_status != PROCESSOR_STATUS_SUCCESS) {
-            log_warn("Execution stopped after %" PRIu32 " cycles (errno %d)", cycles, tick_status);
-            return;
-        }
-        cycles++;
-    }
-}
-
-
 static void cli_process_load(struct processor *processor, int argc, char **argv) {
     if (argc != 2) {
         log_error("Unexpected arguments");
@@ -89,27 +130,6 @@ static void cli_process_load(struct processor *processor, int argc, char **argv)
     if (program != NULL) {
         fclose(program);
     }
-}
-
-
-static void cli_process_quit(struct processor *processor, int argc, char **argv) {
-    (void) argc;
-    (void) argv;
-
-    if (processor->registers->reset == 0x0000) {
-        printf("Simulation is running. Really quit? (y/n) ");
-        char answer[CLI_MAX_COMMAND_LENGTH];
-        char *result = fgets(answer, sizeof(answer), stdin);
-        if (result == NULL) {
-            log_fatal("Could not read answer from standard input");
-        }
-
-        if (strcmp(answer, "y\n") != 0) {
-            return;
-        }
-    }
-
-    exit(0);
 }
 
 
@@ -157,6 +177,27 @@ static void cli_process_memory(struct processor *processor, int argc, char **arg
             printf("...\n");
         }
     }
+}
+
+
+static void cli_process_quit(struct processor *processor, int argc, char **argv) {
+    (void) argc;
+    (void) argv;
+
+    if (processor->registers->reset == 0x0000) {
+        printf("Simulation is running. Really quit? (y/n) ");
+        char answer[CLI_MAX_COMMAND_LENGTH];
+        char *result = fgets(answer, sizeof(answer), stdin);
+        if (result == NULL) {
+            log_fatal("Could not read answer from standard input");
+        }
+
+        if (strcmp(answer, "y\n") != 0) {
+            return;
+        }
+    }
+
+    exit(0);
 }
 
 
@@ -249,7 +290,7 @@ static void cli_process_tick(struct processor *processor, int argc, char **argv)
     }
 
     for (uint32_t i = 0; i < num_cycles; i++) {
-        enum processor_status tick_status = processor_tick(processor);
+        enum processor_status tick_status = processor_tick(processor, NULL);
         if (tick_status != PROCESSOR_STATUS_SUCCESS) {
             log_warn("Execution stopped before requested number of cycles (errno %d)", tick_status);
             return;

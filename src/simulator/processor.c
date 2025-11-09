@@ -88,8 +88,8 @@ static uint32_t processor_fetch_instruction(struct processor *processor) {
 }
 
 
-union isa_instruction processor_decode_instruction(uint32_t binary,
-                                                      enum isa_opcode_format *format)
+static union isa_instruction processor_decode_instruction(uint32_t binary,
+                                                          enum isa_opcode_format *format)
 {
     union isa_instruction instruction;
     instruction.binary = binary;
@@ -283,7 +283,7 @@ static enum processor_status processor_execute_dss_type(struct processor *proces
 }
 
 
-enum processor_status processor_tick(struct processor *processor) {
+enum processor_status processor_tick(struct processor *processor, union isa_instruction *executed) {
     if (processor == NULL) {
         return PROCESSOR_STATUS_INVALID_ARGUMENT;
     }
@@ -298,6 +298,9 @@ enum processor_status processor_tick(struct processor *processor) {
 
     enum isa_opcode_format format;
     union isa_instruction instruction = processor_decode_instruction(binary, &format);
+    if (executed != NULL) {
+        *executed = instruction;
+    }
 
     enum processor_status execute_status;
     uint16_t old_pc = processor->registers->pc;

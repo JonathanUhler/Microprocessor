@@ -100,9 +100,14 @@ enum processor_status processor_deassert_reset(struct processor *processor);
 /**
  * Steps the processor clock forward by one cycle.
  *
- * @param processor  The processor to step.
+ * @param processor[inout]  The processor to step.
+ * @param executed[out]     Optional output pointer to store the instruction that was executed (can
+ *                          be NULL).
+ *
+ * @return The status of the clock tick. If SUCCESS, the instruction that was executed will be
+ *         stored in the *instruction pointer if it is not NULL.
  */
-enum processor_status processor_tick(struct processor *processor);
+enum processor_status processor_tick(struct processor *processor, union isa_instruction *executed);
 
 
 #endif  // _SIMULATOR_PROCESSOR_H_

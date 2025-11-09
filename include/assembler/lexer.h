@@ -16,7 +16,7 @@
 
 
 /** The maximum length (EXCLUDING the null terminator) for lexer tokens. */
-#define LEXER_TOKEN_MAX_LENGTH 31
+#define LEXER_TOKEN_MAX_LENGTH 127
 
 
 /**
