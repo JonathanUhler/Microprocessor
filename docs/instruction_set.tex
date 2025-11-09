@@ -768,6 +768,15 @@ Implementation: \verb|or r0, r0, r0|
 
 Do nothing.
 
+\subsubsection{NOT - Bitwise Inverse}
+Meaning: \verb|R[Dest] <- ~R[Source1]|
+
+Assembler format: \verb|not rd, rs1|
+
+Implementation: \verb|xori rd, rs1, 0xFFFF|
+
+Compute the bitwise NOT of Source 1 and store the result in Dest.
+
 \subsubsection{RET - Return From Subroutine}
 Meaning: \verb|PC <- RA|
 

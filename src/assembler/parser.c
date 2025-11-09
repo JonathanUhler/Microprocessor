@@ -415,6 +415,10 @@ static enum parser_status parser_expect_pseudo_instruction(struct list *tokens,
         group->instruction.source1 = ZERO;
         group->instruction.source2 = ZERO;
     }
+    else if (strncmp(token->text, "not", ISA_OPCODE_SYMBOL_MAX_LENGTH) == 0) {
+        parse_status = parser_expect_ds_instruction(tokens, group);
+        group->instruction.immediate = 0xFFFF;
+    }
     else if (strncmp(token->text, "ret", ISA_OPCODE_SYMBOL_MAX_LENGTH) == 0) {
         parse_status = parser_expect_blank_instruction(tokens);
         group->instruction.dest = ZERO;
