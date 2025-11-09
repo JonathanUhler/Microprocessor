@@ -58,6 +58,7 @@ these registers. The control flow itself may also modify these registers as time
   \hline
   pc & Program counter (absolute byte address) \\
   reset & ONE when the processor is in reset, ZERO otherwise, set by the halt instruction \\
+  ccount & Current processor cycle count modulo $2^16$ \\
   \hline
 \end{tabular}
 
@@ -782,18 +783,18 @@ Jump to the value in the return address register.
 \subsection{Labels}
 Labels are programmer-defined names that will be translated to addresses by the assembler. Label
 names can be lower- and uppercase characters, underscores, and numbers, but cannot start with
-a number.
+a number. Label scope is global to the entire compilation unit.
 
 \subsection{Directives}
 Directives are used to change the machine code generation behavior of the assembler. The following
-directives are avialable.
+directives are available.
 
 \begin{tabular}{|c|l|}
   Directive & Purpose \\
   \hline
-  \verb|.loc offset| & Set the offset in the generated binary to \verb|offset|. \\
+  \verb|.org offset| & Set the absolute offset in the generated binary to \verb|offset|. \\
   \verb|.half data| & Store the constant halfword \verb|data| in memory. \\
-  \verb|.array data, ...| & Store the list of constant halfwords in memory.
+  \verb|.include "path"| & Include the contents of the file at \verb|path| into the current file.
 \end{tabular}
 
 \end{document}

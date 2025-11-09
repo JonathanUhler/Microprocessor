@@ -124,8 +124,8 @@ static void encoder_convert_instruction(struct list *bytes, struct parser_group 
 
 static void encoder_convert_directive(struct list *bytes, struct parser_group *directive) {
     switch (directive->directive.type) {
-    case PARSER_DIRECTIVE_LOC:
-        for (uint32_t b = 0; b < directive->directive.loc.num_pad_bytes; b++) {
+    case PARSER_DIRECTIVE_ORG:
+        for (uint32_t b = 0; b < directive->directive.org.num_pad_bytes; b++) {
             uint8_t *byte = (uint8_t *) calloc(1, sizeof(uint8_t));
             list_add(bytes, (void *) byte);
         }

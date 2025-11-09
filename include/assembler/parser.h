@@ -67,8 +67,8 @@ struct parser_group_label {
  * Types of directives recognized by the parser.
  */
 enum parser_directive_type {
-    /** .loc directive to set parser pc location. */
-    PARSER_DIRECTIVE_LOC,
+    /** .org directive to set parser pc location. */
+    PARSER_DIRECTIVE_ORG,
     /** .half directive to store a halfword. */
     PARSER_DIRECTIVE_HALF,
     /** .include directive handled at parse-time (not emitted to groups). */
@@ -77,10 +77,10 @@ enum parser_directive_type {
 
 
 /**
- * Semantic group for a location directive.
+ * Semantic group for an organization directive.
  */
-struct parser_directive_loc {
-    /** The number of pad bytes needed to reach the .loc location. */
+struct parser_directive_org {
+    /** The number of pad bytes needed to reach the .org location. */
     uint16_t num_pad_bytes;
 };
 
@@ -113,8 +113,8 @@ struct parser_group_directive {
     /** The type of the directive. */
     enum parser_directive_type type;
     union {
-        /** .loc view of the directive group. */
-        struct parser_directive_loc loc;
+        /** .org view of the directive group. */
+        struct parser_directive_org org;
         /** .half view of the directive group. */
         struct parser_directive_half half;
         /** .include view of the directive group. */

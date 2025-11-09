@@ -496,10 +496,10 @@ static enum parser_status parser_expect_label(struct list *tokens, struct parser
 }
 
 
-static enum parser_status parser_expect_loc_directive(struct list *tokens,
+static enum parser_status parser_expect_org_directive(struct list *tokens,
                                                       struct parser_group *group)
 {
-    log_debug("Parser checking for .loc directive");
+    log_debug("Parser checking for .org directive");
 
     enum lexer_token_type period = LEXER_TOKEN_PERIOD;
     enum lexer_token_type identifier = LEXER_TOKEN_IDENTIFIER;
@@ -531,10 +531,10 @@ static enum parser_status parser_expect_loc_directive(struct list *tokens,
     list_pop_front(tokens, &data);
     token = (struct lexer_token *) data;
     if (token->value < parser_pc) {
-        log_fatal(".loc 0x%04" PRIx16 " directive is before pc (0x%04" PRIx16 ")",
+        log_fatal(".org 0x%04" PRIx16 " directive is before pc (0x%04" PRIx16 ")",
                   token->value, parser_pc);
     }
-    group->directive.loc.num_pad_bytes = token->value - parser_pc;
+    group->directive.org.num_pad_bytes = token->value - parser_pc;
     parser_pc = token->value;
     free(token);
 
@@ -663,9 +663,9 @@ static enum parser_status parser_expect_directive(struct list *tokens, struct pa
     }
 
     enum parser_status parse_status;
-    if (strncmp(token->text, "loc", LEXER_TOKEN_MAX_LENGTH) == 0) {
-        group->directive.type = PARSER_DIRECTIVE_LOC;
-        parse_status = parser_expect_loc_directive(tokens, group);
+    if (strncmp(token->text, "org", LEXER_TOKEN_MAX_LENGTH) == 0) {
+        group->directive.type = PARSER_DIRECTIVE_ORG;
+        parse_status = parser_expect_org_directive(tokens, group);
     }
     else if (strncmp(token->text, "half", LEXER_TOKEN_MAX_LENGTH) == 0) {
         group->directive.type = PARSER_DIRECTIVE_HALF;
