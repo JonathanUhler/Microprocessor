@@ -11,8 +11,8 @@ static void cli_process_help(struct processor *processor, int argc, char **argv)
 static void cli_process_continue(struct processor *processor, int argc, char **argv);
 static void cli_process_load(struct processor *processor, int argc, char **argv);
 static void cli_process_quit(struct processor *processor, int argc, char **argv);
-static void cli_process_info_memory(struct processor *processor, int argc, char **argv);
-static void cli_process_info_registers(struct processor *processor, int argc, char **argv);
+static void cli_process_memory(struct processor *processor, int argc, char **argv);
+static void cli_process_registers(struct processor *processor, int argc, char **argv);
 static void cli_process_start(struct processor *processor, int argc, char **argv);
 static void cli_process_tick(struct processor *processor, int argc, char **argv);
 static void cli_process_verbose(struct processor *processor, int argc, char **argv);
@@ -24,8 +24,8 @@ static const struct cli_command_descriptor cli_command_table[] = {
      "continue until reset is asserted or an error occurs"},
     {"load", cli_process_load, "<file> <address>", "load contents of binary file at address"},
     {"quit", cli_process_quit, NULL, "exit the simulator"},
-    {"info memory", cli_process_info_memory, "[[start:]end ...]", "show contents of main memory"},
-    {"info registers", cli_process_info_registers, "[name ...]", "show contents of registers"},
+    {"memory", cli_process_memory, "[[start:]end ...]", "show contents of main memory"},
+    {"registers", cli_process_registers, "[name ...]", "show contents of registers"},
     {"start", cli_process_start, NULL, "assert and deassert reset to cycle the simulated core"},
     {"tick", cli_process_tick, "[cycles]", "tick the clock by specified amount"},
     {"verbose", cli_process_verbose, "[level]", "set or view level of debug messages"}
@@ -113,7 +113,7 @@ static void cli_process_quit(struct processor *processor, int argc, char **argv)
 }
 
 
-static void cli_process_info_memory(struct processor *processor, int argc, char **argv) {
+static void cli_process_memory(struct processor *processor, int argc, char **argv) {
     if (argc == 0) {
         argc = 1;
         argv[0] = "0x0000:0xFFFF";
@@ -138,15 +138,15 @@ static void cli_process_info_memory(struct processor *processor, int argc, char 
             uint32_t byte_num = addr - start;
             uint8_t byte = memory_load_byte(processor->memory, addr);
 
-            if (byte_num % CLI_INFO_MEMORY_BYTES_PER_ROW == 0) {
+            if (byte_num % CLI_MEMORY_BYTES_PER_ROW == 0) {
                 printf("%04" PRIx16 ": ", addr);
             }
-            if (byte_num % CLI_INFO_MEMORY_BYTES_PER_GROUP == 0) {
+            if (byte_num % CLI_MEMORY_BYTES_PER_GROUP == 0) {
                 printf(" ");
             }
             printf("%02" PRIx8, byte);
 
-            if (byte_num % CLI_INFO_MEMORY_BYTES_PER_ROW == CLI_INFO_MEMORY_BYTES_PER_ROW - 1 ||
+            if (byte_num % CLI_MEMORY_BYTES_PER_ROW == CLI_MEMORY_BYTES_PER_ROW - 1 ||
                 addr == end)
             {
                 printf("\n");
@@ -160,7 +160,7 @@ static void cli_process_info_memory(struct processor *processor, int argc, char 
 }
 
 
-static void cli_process_info_registers(struct processor *processor, int argc, char **argv) {
+static void cli_process_registers(struct processor *processor, int argc, char **argv) {
     if (argc == 0) {
         for (uint32_t i = R0; i < R31; i++) {
             const struct isa_register_map *map = isa_get_register_map_from_index(i);
